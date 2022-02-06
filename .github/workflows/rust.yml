@@ -10,31 +10,26 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  release:
+    name: release ${{ matrix.target }}
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz
+          - target: x86_64-apple-darwin
+            archive: zip
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: install deps
-      run: sudo apt-get install gcc g++ libudev-dev pkg-config file make cmake perl yasm openssl libudev-dev file curl jq build-essential libssl-dev git libclang-dev intltool -y
-    - name: Setup Windows Building
-      run: rustup target add x86_64-pc-windows-gnu
-    - name: install target
-      run: rustup toolchain install stable-x86_64-pc-windows-gnu
-      
-    - name: Build Debug
-      run: cargo build --target x86_64-pc-windows-gnu --verbose
-    - uses: actions/upload-artifact@v2
-      with:
-        name: debug-build
-        path: target/debug
-        
-    - name: Build Release
-      run: cargo build --target x86_64-pc-windows-gnu --release --verbose
-    - uses: actions/upload-artifact@v2
-      with:
-        name: release-build
-        path: target/release
+      - uses: actions/checkout@master
+      - name: Compile and release
+        uses: rust-build/rust-build.action@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+
     
