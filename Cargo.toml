@@ -1,0 +1,17 @@
+[package]
+name = "rusted_wumpus"
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+authors = ["BuyMyMojo <https://github.com/BuyMyMojo>"]
+repository = "https://github.com/BuyMyMojo/Rusted-Wumpus"
+license-file = "LICENSE"
+keywords = ["discord", "bot"]
+description = "A general discord bot made in rust as a learning experince"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.16.1", features = ["full"] }
+serenity = { default-features = false, features = ["client", "gateway", "model", "rustls_backend", "standard_framework", "collector", "framework", "cache"], version = "0.10.10"}
