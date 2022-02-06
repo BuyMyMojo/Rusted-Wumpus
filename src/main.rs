@@ -1,4 +1,5 @@
 use std::{collections::HashSet, env};
+use owoify::OwOifiable;
 
 use serenity::{
     async_trait,
@@ -25,7 +26,7 @@ This is just an example message I am making as a test for this bot!
 ";
 
 #[group]
-#[commands(ping, info)]  // Do I actually need to list all my commands here??
+#[commands(ping, info, owo)]  // Do I actually need to list all my commands here??
 struct General;
 
 struct Handler;
@@ -94,6 +95,22 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
 #[description("Replies with some basic info")]
 async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     msg.reply(ctx, INFO_MESSAGE).await?;
+
+    Ok(())
+}
+
+#[command("owo")]
+#[description("OwOifys your message")]
+async fn owo(ctx: &Context, msg: &Message) -> CommandResult {
+    let text = String::from(
+        msg.content
+        .trim_start_matches("<>owo ")  // Remove the start of the command. proabbly a way to get the message without removing the start, like Nextcord's * args. too tired to look into it
+    );
+
+    match msg.content.as_str() {
+        "<>owo" => msg.reply(ctx, "You must provide input text!").await?,
+        _ => msg.reply(ctx,text.owoify()).await?,
+    };
 
     Ok(())
 }
