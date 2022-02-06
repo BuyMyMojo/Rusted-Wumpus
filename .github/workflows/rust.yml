@@ -31,5 +31,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
+      - uses: papeloto/action-zip@v1
+        with:
+          files: target/${{ matrix.target }}
+          dest: ${{ matrix.target }}.zip
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ matrix.target }}.zip
 
     
