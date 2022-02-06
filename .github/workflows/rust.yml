@@ -22,6 +22,6 @@ jobs:
         name: ${{ env.BINARY_NAME }}
         path: target/x86_64-unknown-linux-musl/release/${{ env.BINARY_NAME }}
     - name: list dir1
-      run: ls target/release
+      run: ls target/release/build
     - name: list dir2
-      run: ls target/x86_64-unknown-linux-musl
+      run: ls target/x86_64-unknown-linux-musl/release
