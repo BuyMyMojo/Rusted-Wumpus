@@ -8,6 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  BUILD_TARGET: x86_64-unknown-linux-musl
+  BINARY_NAME: rusted-wumpus
 
 jobs:
   release:
@@ -24,21 +26,16 @@ jobs:
           - target: x86_64-apple-darwin
             archive: zip
     steps:
-      - uses: actions/checkout@master
-      - name: Compile and release
-        uses: rust-build/rust-build.action@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-      - uses: papeloto/action-zip@v1
-        with:
-          files: target/${{ matrix.target }}
-          dest: ${{ matrix.target }}.zip
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.target }}
-          path: ${{ matrix.target }}.zip
+    - uses: actions/checkout@v2
+    - name: Build-musl
+      uses: gmiam/rust-musl-action@master
+      with:
+        args: cargo build --target  ${{ matrix.target }} --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.BINARY_NAME }}-${{ matrix.target }}
+        path: target/ ${{ matrix.target }}/release/${{ env.BINARY_NAME }}*
+
+    
 
     
