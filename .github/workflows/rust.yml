@@ -17,6 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: install deps
+      run: sudo apt-get install gcc g++ libudev-dev pkg-config file make cmake perl yasm openssl libudev-dev file curl jq build-essential libssl-dev git libclang-dev intltool -y
     - name: Setup Windows Building
       run: rustup target add x86_64-pc-windows-gnu
     - name: install target
