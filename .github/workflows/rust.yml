@@ -19,6 +19,8 @@ jobs:
     
     - name: Setup Windows Building
       run: rustup target add x86_64-pc-windows-gnu
+    - name: install target
+      run: rustup toolchain install stable-x86_64-pc-windows-gnu
       
     - name: Build Debug
       run: cargo build --target x86_64-pc-windows-gnu --verbose
