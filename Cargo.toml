@@ -16,3 +16,6 @@ description = "A general discord bot made in rust as a learning experince"
 tokio = { version = "1.16.1", features = ["full"] }
 serenity = { default-features = false, features = ["client", "gateway", "model", "rustls_backend", "standard_framework", "collector", "framework", "cache"], version = "0.10.10"}
 owoify = "0.1.5"
+dflake = "0.1.0"
+chrono = "0.4.19"
+rustflake = "0.1.1"
