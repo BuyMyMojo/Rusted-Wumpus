@@ -8,7 +8,7 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  cargo-build:
+  linux-build:
     docker:
       - image: cimg/rust:1.59.0
     resource_class: large
@@ -21,13 +21,13 @@ jobs:
           command: "mkdir /tmp/artifacts"
       - run:
           name: "build"
-          command: "cargo build --target-dir /tmp/artifacts"
+          command: "cargo build -j 4 --target-dir /tmp/artifacts"
       - store_artifacts:
           path: /tmp/artifacts/debug/rusted_wumpus
   
-  cargo-build-win:
+  windows-build:
         executor: 
-          name: windows/server-2022
+          name: windows/default
           size: large
 
         steps:
@@ -49,7 +49,7 @@ jobs:
                 name: "build"
                 command: |
                       $env:Path += ";C:\Users\circleci\.cargo\bin"
-                      cargo build --target-dir C:\tmp\artifacts
+                      cargo build -j 4 --target-dir C:\tmp\artifacts
             - store_artifacts:
                 path: C:\tmp\artifacts\debug\rusted_wumpus.exe
 
@@ -58,7 +58,7 @@ jobs:
 workflows:
   linux:
     jobs:
-      - cargo-build
+      - linux-build
   windows:
     jobs:
-      - cargo-build-win
+      - windows-build
