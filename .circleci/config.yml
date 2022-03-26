@@ -2,8 +2,8 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-orbs:
-    windows: circleci/windows@2.4.0
+orbs: 
+  windows: circleci/windows@4.0.0
   
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
@@ -11,6 +11,7 @@ jobs:
   cargo-build:
     docker:
       - image: cimg/rust:1.59.0
+    resource_class: large
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -25,13 +26,9 @@ jobs:
           path: /tmp/artifacts/debug/rusted_wumpus
   
   cargo-build-win:
-        executor: windows/default
-
-        environment:
-            OPENSSL_STATIC: "1"
-            OPENSSL_DIR: "C:\\OpenSSL"
-            RUSTFLAGS: "-Ctarget-feature=+aes,+ssse3"
-            CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+        executor: 
+          name: windows/server-2022
+          size: large
 
         steps:
             - checkout
