@@ -50,7 +50,9 @@ jobs:
                   cargo --version
             - run:
                 name: "build"
-                command: "cargo --target-dir C:\\tmp\\artifacts"
+                command: |
+                      $env:Path += ";C:\Users\circleci\.cargo\bin"
+                      cargo --target-dir C:\tmp\artifacts
             - store_artifacts:
                 path: C:\tmp\artifacts\debug\rusted_wumpus.exe
 
