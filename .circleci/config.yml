@@ -2,6 +2,9 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
+orbs:
+  docker: circleci/docker@1.7.0
+  
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
@@ -25,6 +28,7 @@ jobs:
       - image: cimg/rust:1.59.0
     steps:
       - checkout
+      - docker/install-docker
       - run:
           name: "create artifact folder"
           command: "mkdir /tmp/artifacts"
