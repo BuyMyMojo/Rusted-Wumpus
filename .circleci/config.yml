@@ -13,22 +13,35 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "create artifact folder"
+          command: "mkdir /tmp/artifacts"
+      - run:
           name: "build"
-          command: "cargo build"
+          command: "cargo build --target-dir /tmp/artifacts"
+      - store_artifacts:
+          path: /tmp/artifacts
   cargo-build-win:
     docker:
       - image: cimg/rust:1.59.0
     steps:
       - checkout
       - run:
-          name: "add build target"
-          command: "rustup target add x86_64-pc-windows-gnu"
+          name: "create artifact folder"
+          command: "mkdir /tmp/artifacts"
       - run:
-          name: "install toolchain"
-          command: "rustup toolchain install stable-x86_64-pc-windows-gnu"
+          name: "install requirements"
+          command: "cargo install cross"
+      # - run:
+      #     name: "add build target"
+      #     command: "rustup target add x86_64-pc-windows-gnu"
+      # - run:
+      #     name: "install toolchain"
+      #     command: "rustup toolchain install stable-x86_64-pc-windows-gnu"
       - run:
           name: "build"
-          command: "cargo build --target x86_64-pc-windows-gnu"
+          command: "cross build --target x86_64-pc-windows-gnu --target-dir /tmp/artifacts"
+      - store_artifacts:
+          path: /tmp/artifacts
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
