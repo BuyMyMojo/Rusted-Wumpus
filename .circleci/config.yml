@@ -11,7 +11,7 @@ jobs:
   linux-build:
     docker:
       - image: cimg/rust:1.59.0
-    resource_class: large
+    resource_class: small
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -28,7 +28,7 @@ jobs:
   windows-build:
         executor: 
           name: windows/default
-          size: large
+          size: medium
 
         environment:
             CARGO_NET_GIT_FETCH_WITH_CLI: "true"
