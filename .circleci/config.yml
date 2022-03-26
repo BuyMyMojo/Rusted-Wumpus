@@ -30,6 +30,9 @@ jobs:
           name: windows/default
           size: large
 
+        environment:
+            CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
         steps:
             - checkout
             - run:
