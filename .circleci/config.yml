@@ -11,7 +11,7 @@ jobs:
   linux-build:
     docker:
       - image: cimg/rust:1.59.0
-    resource_class: small
+    resource_class: xlarge
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -21,14 +21,14 @@ jobs:
           command: "mkdir /tmp/artifacts"
       - run:
           name: "build"
-          command: "cargo build -j 4 --target-dir /tmp/artifacts"
+          command: "cargo build -j 8 --target-dir /tmp/artifacts"
       - store_artifacts:
           path: /tmp/artifacts/debug/rusted_wumpus
   
   windows-build:
         executor: 
           name: windows/default
-          size: medium
+          size: large
 
         environment:
             CARGO_NET_GIT_FETCH_WITH_CLI: "true"
@@ -52,7 +52,7 @@ jobs:
                 name: "build"
                 command: |
                       $env:Path += ";C:\Users\circleci\.cargo\bin"
-                      cargo build -j 4 --target-dir C:\tmp\artifacts
+                      cargo build -j 8 --target-dir C:\tmp\artifacts
             - store_artifacts:
                 path: C:\tmp\artifacts\debug\rusted_wumpus.exe
 
