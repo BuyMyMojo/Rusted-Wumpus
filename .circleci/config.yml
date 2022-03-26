@@ -22,13 +22,15 @@ jobs:
           name: "build"
           command: "cargo build --target-dir /tmp/artifacts"
       - store_artifacts:
-          path: /tmp/artifacts
+          path: /tmp/artifacts/debug/rusted_wumpus
   cargo-build-win:
     docker:
       - image: cimg/rust:1.59.0
     steps:
       - checkout
       - docker/install-docker
+      - setup_remote_docker:
+          version: 19.03.13
       - run:
           name: "create artifact folder"
           command: "mkdir /tmp/artifacts"
@@ -45,7 +47,7 @@ jobs:
           name: "build"
           command: "cross build --target x86_64-pc-windows-gnu --target-dir /tmp/artifacts"
       - store_artifacts:
-          path: /tmp/artifacts
+          path: /tmp/artifacts/debug/rusted_wumpus.exe
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
