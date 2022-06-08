@@ -1,16 +1,26 @@
 use chrono::NaiveDateTime;
 
+use poise::serenity_prelude::{AttachmentType, Colour};
+
+use serde_json::json;
+use reqwest::Client;
+
+use html2text::from_read;
+
 use std::time::Instant;
 
 use std::{sync::mpsc, thread}; // Multithreading // Time tracking
 
 use owoify::OwOifiable;
 
-use poise::serenity_prelude::{self as serenity};
+use poise::{serenity_prelude as serenity};
+
+use std::{env, array};
 
 type Data = ();
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
 
 // I wounder if storing this text as a const is more efficient then just putting it inside the reply function? I will ask around later.
 const INFO_MESSAGE: &str = "
@@ -43,43 +53,12 @@ This is a test bot I made to learn Rust",
     Ok(())
 }
 
-#[tokio::main]
-async fn main() {
-    poise::Framework::build()
-        .token(std::env::var("TESTING_DISCORD_TOKEN").expect("Expected a token in the environment"))
-        .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
-        .options(poise::FrameworkOptions {
-            // configure framework here
-            prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some("<>".into()),
-                ..Default::default()
-            },
-            commands: vec![
-                age(),
-                help(),
-                register(),
-                ping(),
-                info(),
-                owo(),
-                threadtest(),
-                creationdate(),
-                pog(),
-            ],
-            ..Default::default()
-        })
-        .run()
-        .await
-        .unwrap()
-}
-
 // Create commands bellow!
 
 /// Display your or another user's account creation date
 #[poise::command(prefix_command, slash_command, track_edits)]
-pub async fn age(
-    ctx: Context<'_>,
-    #[description = "Selected user"] user: Option<serenity::User>,
-) -> Result<(), Error> {
+pub async fn age(ctx: Context<'_>, #[description = "Selected user"] user: Option<serenity::User>,) -> Result<(), Error> 
+{
     let user = user.as_ref().unwrap_or(ctx.author());
     ctx.say(format!(
         "{}'s account was created at {}",
@@ -94,8 +73,8 @@ pub async fn age(
 /// Register application commands in this guild or globally
 ///
 /// Run with no arguments to register in guild, run with argument "global" to register globally.
-#[poise::command(prefix_command, hide_in_help, owners_only)]
-async fn register(ctx: Context<'_>, #[flag] global: bool) -> Result<(), Error> {
+#[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
+async fn register(ctx: Context<'_>, #[flag] #[description = "Register commands globally"] global: bool) -> Result<(), Error> {
     poise::builtins::register_application_commands(ctx, global).await?;
 
     Ok(())
@@ -129,16 +108,387 @@ async fn info(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(prefix_command, slash_command, category = "Fun")]
 async fn owo(
     ctx: Context<'_>,
-    #[description = "Message"] msg: Option<String>,
+    #[description = "Message"] msg: String,
 ) -> Result<(), Error> {
-    ctx.say(String::from(msg.unwrap()).owoify()).await?;
+    ctx.say(String::from(msg).owoify()).await?;
 
+    Ok(())
+}
+
+// Query to use in AniList request
+const ANIME_QUERY: &str = "
+query ($search: String) { # Define which variables will be used in the query (id)
+  Media (search: $search, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
+    id
+    title {
+      romaji
+      english
+      native
+    }
+    status
+    description
+    startDate {
+        year
+        month
+        day
+    }
+    endDate {
+        year
+        month
+        day
+    }
+    coverImage {
+        extraLarge
+        large
+        color
+    }
+    season
+    seasonYear
+    seasonInt
+    episodes
+    duration
+    hashtag
+    trailer {
+        id
+        site
+        thumbnail
+    }
+    genres
+    averageScore
+    meanScore
+    isAdult
+    siteUrl
+  }
+}
+";
+
+// Query to use in AniList request
+const MANGA_QUERY: &str = "
+query ($search: String) { # Define which variables will be used in the query (id)
+  Media (search: $search, type: MANGA) { # Insert our variables into the query arguments (id) (type: MANGA is hard-coded in the query)
+    id
+    title {
+      romaji
+      english
+      native
+    }
+    status
+    description
+    startDate {
+        year
+        month
+        day
+    }
+    endDate {
+        year
+        month
+        day
+    }
+    coverImage {
+        extraLarge
+        large
+        color
+    }
+    volumes
+    chapters
+    season
+    seasonYear
+    seasonInt
+    hashtag
+    genres
+    averageScore
+    meanScore
+    isAdult
+    siteUrl
+  }
+}
+";
+
+/// Get an AniList entry for an Anime
+#[poise::command(prefix_command, slash_command, category = "Fun")]
+async fn anime(
+    ctx: Context<'_>,
+    #[description = "Name"] msg: String,
+    #[description = "Output raw json"] raw: Option<bool>,
+) -> Result<(), Error> {
+    // Tell discord wait longer then 3 secconds
+    ctx.defer().await?;
+
+    let client = Client::new();
+
+    // Define query and variables
+    let json = json!({"query": ANIME_QUERY, "variables": {"search": format!("{}", msg)}});
+
+    // Make HTTP post request
+    let resp = client.post("https://graphql.anilist.co/")
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .body(json.to_string())
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await;
+
+    // Get json
+    let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
+
+    let formatted_json = format!("{:#?}", result);
+
+    // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
+    let description = from_read(result["data"]["Media"]["description"].as_str().unwrap().as_bytes(), 50);
+    let status = result["data"]["Media"]["status"].as_str().unwrap();
+    let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
+    let episode_count = result["data"]["Media"]["episodes"].as_u64().unwrap();
+    let average_episode_length = result["data"]["Media"]["duration"].as_u64().unwrap();
+    let average_score = result["data"]["Media"]["averageScore"].as_u64().unwrap();
+    let median_score = result["data"]["Media"]["meanScore"].as_u64().unwrap();
+    let adult = result["data"]["Media"]["isAdult"].as_bool().unwrap();
+
+
+    let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
+    let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
+    if result["data"]["Media"]["title"]["english"].as_str() != None {
+        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
+    }
+
+
+    let mut base_colour = "#aed6f1";
+    if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
+        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
+    }
+
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
+
+    let mut season = "N/A";
+    if result["data"]["Media"]["season"].as_str() != None {
+        season = result["data"]["Media"]["season"].as_str().unwrap();
+    }
+
+    let mut start_year: i64 = -1;
+    if result["data"]["Media"]["startDate"]["year"].as_i64() != None{
+        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
+    }
+    let mut start_month: i64 = -1;
+    if result["data"]["Media"]["startDate"]["month"].as_i64() != None{
+        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
+    }
+    let mut start_day: i64 = -1;
+    if result["data"]["Media"]["startDate"]["day"].as_i64() != None{
+        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
+    }
+    
+    let mut end_year: i64 = -1;
+    if result["data"]["Media"]["endDate"]["year"].as_i64() != None{
+        end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
+    }
+    let mut end_month: i64 = -1;
+    if result["data"]["Media"]["endDate"]["month"].as_i64() != None{
+        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
+    }
+    let mut end_day: i64 = -1;
+    if result["data"]["Media"]["endDate"]["day"].as_i64() != None{
+        end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
+    }
+
+
+    let without_prefix = base_colour.trim_start_matches("#");
+    let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
+
+    let field_list = [
+        ("English Name", format!("{}", english_title), true),
+        ("Romaji Name", format!("{}", romaji_title), true),
+        ("Description", format!("{}", description), false),
+        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
+        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
+        ("Status", format!("{}", status), true),
+        ("Episode Count", format!("{}", episode_count), true),
+        ("Episode Length", format!("{} minutes", average_episode_length), true),
+        ("Average score", format!("{}", average_score), true),
+        ("Mean score", format!("{}", median_score), true),
+        ("Is adult?", format!("{}", adult), true),
+    ];
+        
+        
+    if raw != None {
+        if raw.unwrap() == true {
+            ctx.send(|f| f
+                .content("Anime result")
+                .ephemeral(false)
+                .attachment(AttachmentType::Bytes { data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()), filename: String::from("Anime.json") })
+                ).await?;
+        }
+        else {
+            ctx.send(|f| f
+                .embed(|b| b
+                .colour(Colour::from(colour_i32).tuple())
+                .description("Anime Result")
+                .image(image)
+                .author(|f| f
+                .icon_url(small_image)
+                .name("AniList")
+                .url(anilist_url))
+                .fields(field_list)
+                )).await?;
+        }
+    } else {
+        ctx.send(|f| f
+            .embed(|b| b
+            .colour(Colour::from(colour_i32).tuple())
+            .description("Anime Result")
+            .image(image)
+            .author(|f| f
+            .icon_url(small_image)
+            .name("AniList")
+            .url(anilist_url))
+            .fields(field_list)
+            )).await?;
+    }
+    Ok(())
+}
+
+/// Get an AniList entry for a Manga
+#[poise::command(prefix_command, slash_command, category = "Fun")]
+async fn manga(
+    ctx: Context<'_>,
+    #[description = "Name"] msg: String,
+    #[description = "Output raw json"] raw: Option<bool>,
+) -> Result<(), Error> {
+    // Tell discord wait longer then 3 secconds
+    ctx.defer().await?;
+
+    let client = Client::new();
+
+    // Define query and variables
+    let json = json!({"query": MANGA_QUERY, "variables": {"search": format!("{}", msg)}});
+
+    // Make HTTP post request
+    let resp = client.post("https://graphql.anilist.co/")
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .body(json.to_string())
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await;
+
+    // Get json
+    let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
+
+    let formatted_json = format!("{:#?}", result);
+
+    if raw != None {
+        if raw.unwrap() == true {
+            ctx.send(|f| f
+                .content("Anime result")
+                .ephemeral(false)
+                .attachment(AttachmentType::Bytes { data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()), filename: String::from("Anime.json") })
+                ).await?;
+            
+            return Ok(());
+        }
+    }
+
+    // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
+    let description = from_read(result["data"]["Media"]["description"].as_str().unwrap().as_bytes(), 50);
+    let status = result["data"]["Media"]["status"].as_str().unwrap();
+    let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
+    let mut volume_count: i64 = -1;
+    if result["data"]["Media"]["volumes"].as_i64() != None{
+        volume_count = result["data"]["Media"]["volumes"].as_i64().unwrap();
+    }
+    let chapter_coumt = result["data"]["Media"]["chapters"].as_u64().unwrap();
+    let average_score = result["data"]["Media"]["averageScore"].as_u64().unwrap();
+    let median_score = result["data"]["Media"]["meanScore"].as_u64().unwrap();
+    let adult = result["data"]["Media"]["isAdult"].as_bool().unwrap();
+
+    let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
+    let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
+    if result["data"]["Media"]["title"]["english"].as_str() != None {
+        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
+    }
+
+
+    let mut base_colour = "#aed6f1";
+    if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
+        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
+    }
+
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
+
+    let mut season = "N/A";
+    if result["data"]["Media"]["season"].as_str() != None {
+        season = result["data"]["Media"]["season"].as_str().unwrap();
+    }
+
+    let mut start_year: i64 = -1;
+    if result["data"]["Media"]["startDate"]["year"].as_i64() != None{
+        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
+    }
+    let mut start_month: i64 = -1;
+    if result["data"]["Media"]["startDate"]["month"].as_i64() != None{
+        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
+    }
+    let mut start_day: i64 = -1;
+    if result["data"]["Media"]["startDate"]["day"].as_i64() != None{
+        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
+    }
+    
+    let mut end_year: i64 = -1;
+    if result["data"]["Media"]["endDate"]["year"].as_i64() != None{
+        end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
+    }
+    let mut end_month: i64 = -1;
+    if result["data"]["Media"]["endDate"]["month"].as_i64() != None{
+        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
+    }
+    let mut end_day: i64 = -1;
+    if result["data"]["Media"]["endDate"]["day"].as_i64() != None{
+        end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
+    }
+
+
+    let without_prefix = base_colour.trim_start_matches("#");
+    let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
+
+    let field_list = [
+        ("English Name", format!("{}", english_title), true),
+        ("Romaji Name", format!("{}", romaji_title), true),
+        ("Description", format!("{}", description), false),
+        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
+        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
+        ("Status", format!("{}", status), true),
+        ("Volume Count", format!("{}", volume_count), true),
+        ("Chapter Count", format!("{} minutes", chapter_coumt), true),
+        ("Average Score", format!("{}", average_score), true),
+        ("Mean Score", format!("{}", median_score), true),
+        ("Is Adult?", format!("{}", adult), true),
+    ];
+        
+        
+    
+     
+    ctx.send(|f| f
+        .embed(|b| b
+        .colour(Colour::from(colour_i32).tuple())
+        .description("Anime Result")
+        .image(image)
+        .author(|f| f
+        .icon_url(small_image)
+        .name("AniList")
+        .url(anilist_url))
+        .fields(field_list)
+        )).await?;
     Ok(())
 }
 
 /// Tests multithreded functionality. use -t to show how long the threads live for
 #[poise::command(prefix_command, slash_command, category = "Testing")]
-async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> {
+async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> 
+{
     // Main math channels
     let (tx1, rx1) = mpsc::channel();
     let (tx2, rx2) = mpsc::channel();
@@ -217,4 +567,39 @@ fn snowflake_to_unix(id: u128) -> u128 {
     let unix_timecode = ((id >> 22) + DISCORD_EPOCH) / 1000;
 
     return unix_timecode;
+}
+
+// Handle bot start and settings here
+
+#[tokio::main]
+async fn main() {
+    let framework = poise::Framework::build()
+        .token(env::var("TESTING_DISCORD_TOKEN").expect("Expected a token in the environment"))
+        .intents(
+            serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT,
+        )
+        .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
+        .options(poise::FrameworkOptions {
+            // configure framework here
+            commands: vec![
+                age(),
+                help(),
+                register(),
+                ping(),
+                info(),
+                owo(),
+                threadtest(),
+                creationdate(),
+                pog(),
+                anime(),
+                manga(),
+            ],
+            prefix_options: poise::PrefixFrameworkOptions {
+                prefix: Some("<>".into()),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        
+        framework.run().await.unwrap();
 }
