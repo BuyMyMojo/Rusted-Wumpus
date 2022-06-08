@@ -63,6 +63,7 @@ async fn main() {
                 owo(),
                 threadtest(),
                 creationdate(),
+                pog(),
             ],
             ..Default::default()
         })
@@ -104,6 +105,14 @@ async fn register(ctx: Context<'_>, #[flag] global: bool) -> Result<(), Error> {
 #[poise::command(prefix_command, slash_command, category = "Miscellaneous")]
 async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("Pong!").await?;
+
+    Ok(())
+}
+
+/// Replies with pog pog pog!
+#[poise::command(prefix_command, slash_command, category = "Fun")]
+async fn pog(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.say("pog pog pog!").await?;
 
     Ok(())
 }
