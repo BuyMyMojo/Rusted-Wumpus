@@ -13,16 +13,14 @@ description = "A general discord bot made in rust as a learning experince"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.18.2", features = ["full"] }
+tokio = { version = "1.19.2", features = ["full"] }
 # serenity = { default-features = false, features = ["client", "gateway", "model", "rustls_backend", "standard_framework", "collector", "framework", "cache"], version = "0.11.2"}
-owoify = "0.1.5"
 chrono = "0.4.19"
 poise = { git = "https://github.com/kangalioo/poise", branch = "develop" }
 quote = "1.0.18"
 serde_json = "1.0.81"
 reqwest = "0.11.10"
 serde = "1.0.137"
-html2text = "0.4.2"
-# tempfile = "3"
-
-# { git = "https://github.com/kangalioo/poise", branch = "develop", features = ["collector"] }
+html2text = "*"
+owoify = "*"
+redis = "*"
