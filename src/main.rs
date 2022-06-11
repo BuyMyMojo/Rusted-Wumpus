@@ -1,3 +1,5 @@
+extern crate redis;
+
 use chrono::NaiveDateTime;
 
 use poise::serenity_prelude::{AttachmentType, Colour};
@@ -15,7 +17,9 @@ use owoify::OwOifiable;
 
 use poise::{serenity_prelude as serenity};
 
-use std::{env};
+use std::{env, vec};
+
+use clap::Parser;
 
 // Variables stores more cleanly
 mod vars;
@@ -26,6 +30,19 @@ use vars::INFO_MESSAGE;
 type Data = ();
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Address of Redis server
+    #[clap(short, long, default_value = "redis://localhost:49153/")]
+    redis_address: String,
+
+    /// Discord bot token
+    #[clap(short, long, default_value = "")]
+    token: String,
+}
 
 
 /// Show this help menu
@@ -81,6 +98,52 @@ async fn register(ctx: Context<'_>, #[flag] #[description = "Register commands g
 #[poise::command(prefix_command, slash_command, category = "Miscellaneous")]
 async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("Pong!").await?;
+
+    Ok(())
+}
+
+/// Test to see if data can get pulled from redis
+#[poise::command(prefix_command, slash_command, category = "Miscellaneous")]
+async fn redis(ctx: Context<'_>) -> Result<(), Error> {
+    let args = Args::parse();
+
+    let client = redis::Client::open(args.redis_address)?;
+    let mut con = client.get_connection()?;
+
+    let string_resp: String = redis::cmd("GET").arg("testkeys:string").query(&mut con)?;
+
+    let set_resp: Vec<String> = redis::cmd("SMEMBERS").arg("testkeys:set").query(&mut con)?;
+
+    let list_len: isize = redis::cmd("LLEN").arg("testkeys:list").query(&mut con)?;
+    let list_resp: Vec<String> = redis::cmd("LRANGE").arg("testkeys:list").arg(0).arg(list_len - 1).query(&mut con)?;
+
+    let first_hash_resp: String = redis::cmd("HGET").arg("testkeys:hash").arg("first_hash").query(&mut con)?;
+    let second_hash_resp: String = redis::cmd("HGET").arg("testkeys:hash").arg("second_hash").query(&mut con)?;
+
+    let json_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").query(&mut con)?;
+    let is_working_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").arg("is-this-working").query(&mut con)?;
+    let is_this_fromredis_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").arg("is-this-fromredis").query(&mut con)?;
+    
+
+    let fields = [
+                                                ("testkeys:string", string_resp, true),
+                                                ("testkeys:hash - first_hash", first_hash_resp, true),
+                                                ("testkeys:hash - second_hash", second_hash_resp, true),
+                                                ("testkeys:set - all members", format!("{}", set_resp.join(" ")), true),
+                                                ("testkeys:list - all items", format!("{}", list_resp.join(" ")), true),
+                                                ("Raw testkeys:json", json_resp, true),
+                                                ("is-this-working field from testkeys:json", is_working_resp, true),
+                                                ("is-this-fromredis field from testkeys:json", is_this_fromredis_resp, true
+                                            )];
+
+    // ctx.say(json_resp).await?;
+
+    ctx.send(|f| f
+    .embed(|f| f
+    .title("Redis Test")
+    .description("Each field here is a different request and should be unique")
+    .fields(fields)
+    .colour((220, 56, 44)))).await?;
 
     Ok(())
 }
@@ -502,6 +565,7 @@ async fn main() {
                 pog(),
                 anime(),
                 manga(),
+                redis(),
             ],
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some("<>".into()),

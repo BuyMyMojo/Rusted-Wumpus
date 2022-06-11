@@ -1,5 +1,6 @@
 {
     "conventionalCommits.scopes": [
-        "main.rs"
+        "main.rs",
+        "vars.rs"
     ]
 }
