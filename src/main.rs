@@ -541,12 +541,23 @@ fn snowflake_to_unix(id: u128) -> u128 {
     return unix_timecode;
 }
 
-// Handle bot start and settings here
 
+// Handle bot start and settings here
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
+
+    let dtoken: String;
+
+    if args.token == "" {
+        dtoken = env::var("RUSTED_WUMPUS_DISCORD_TOKEN").expect("No discord token in environment variables or command line arguments");
+    } else {
+        dtoken = args.token;
+    }
+
+
     let framework = poise::Framework::build()
-        .token(env::var("TESTING_DISCORD_TOKEN").expect("Expected a token in the environment"))
+        .token(dtoken)
         .intents(
             serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT,
         )
