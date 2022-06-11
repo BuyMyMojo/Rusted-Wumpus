@@ -4,8 +4,8 @@ use chrono::NaiveDateTime;
 
 use poise::serenity_prelude::{AttachmentType, Colour};
 
-use serde_json::json;
 use reqwest::Client;
+use serde_json::json;
 
 use html2text::from_read;
 
@@ -15,7 +15,7 @@ use std::{sync::mpsc, thread}; // Multithreading // Time tracking
 
 use owoify::OwOifiable;
 
-use poise::{serenity_prelude as serenity};
+use poise::serenity_prelude as serenity;
 
 use std::{env, vec};
 
@@ -24,13 +24,12 @@ use clap::Parser;
 // Variables stores more cleanly
 mod vars;
 use vars::ANIME_QUERY;
-use vars::MANGA_QUERY;
 use vars::INFO_MESSAGE;
+use vars::MANGA_QUERY;
 
 type Data = ();
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -43,7 +42,6 @@ struct Args {
     #[clap(short, long, default_value = "")]
     token: String,
 }
-
 
 /// Show this help menu
 #[poise::command(prefix_command, track_edits, slash_command, category = "Info")]
@@ -71,8 +69,10 @@ This is a test bot I made to learn Rust",
 
 /// Display your or another user's account creation date
 #[poise::command(prefix_command, slash_command, track_edits)]
-pub async fn age(ctx: Context<'_>, #[description = "Selected user"] user: Option<serenity::User>,) -> Result<(), Error> 
-{
+pub async fn age(
+    ctx: Context<'_>,
+    #[description = "Selected user"] user: Option<serenity::User>,
+) -> Result<(), Error> {
     let user = user.as_ref().unwrap_or(ctx.author());
     ctx.say(format!(
         "{}'s account was created at {}",
@@ -88,7 +88,12 @@ pub async fn age(ctx: Context<'_>, #[description = "Selected user"] user: Option
 ///
 /// Run with no arguments to register in guild, run with argument "global" to register globally.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
-async fn register(ctx: Context<'_>, #[flag] #[description = "Register commands globally"] global: bool) -> Result<(), Error> {
+async fn register(
+    ctx: Context<'_>,
+    #[flag]
+    #[description = "Register commands globally"]
+    global: bool,
+) -> Result<(), Error> {
     poise::builtins::register_application_commands(ctx, global).await?;
 
     Ok(())
@@ -115,35 +120,71 @@ async fn redis(ctx: Context<'_>) -> Result<(), Error> {
     let set_resp: Vec<String> = redis::cmd("SMEMBERS").arg("testkeys:set").query(&mut con)?;
 
     let list_len: isize = redis::cmd("LLEN").arg("testkeys:list").query(&mut con)?;
-    let list_resp: Vec<String> = redis::cmd("LRANGE").arg("testkeys:list").arg(0).arg(list_len - 1).query(&mut con)?;
+    let list_resp: Vec<String> = redis::cmd("LRANGE")
+        .arg("testkeys:list")
+        .arg(0)
+        .arg(list_len - 1)
+        .query(&mut con)?;
 
-    let first_hash_resp: String = redis::cmd("HGET").arg("testkeys:hash").arg("first_hash").query(&mut con)?;
-    let second_hash_resp: String = redis::cmd("HGET").arg("testkeys:hash").arg("second_hash").query(&mut con)?;
+    let first_hash_resp: String = redis::cmd("HGET")
+        .arg("testkeys:hash")
+        .arg("first_hash")
+        .query(&mut con)?;
+    let second_hash_resp: String = redis::cmd("HGET")
+        .arg("testkeys:hash")
+        .arg("second_hash")
+        .query(&mut con)?;
 
-    let json_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").query(&mut con)?;
-    let is_working_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").arg("is-this-working").query(&mut con)?;
-    let is_this_fromredis_resp: String = redis::cmd("JSON.GET").arg("testkeys:json").arg("is-this-fromredis").query(&mut con)?;
-    
+    let json_resp: String = redis::cmd("JSON.GET")
+        .arg("testkeys:json")
+        .query(&mut con)?;
+    let is_working_resp: String = redis::cmd("JSON.GET")
+        .arg("testkeys:json")
+        .arg("is-this-working")
+        .query(&mut con)?;
+    let is_this_fromredis_resp: String = redis::cmd("JSON.GET")
+        .arg("testkeys:json")
+        .arg("is-this-fromredis")
+        .query(&mut con)?;
 
     let fields = [
-                                                ("testkeys:string", string_resp, true),
-                                                ("testkeys:hash - first_hash", first_hash_resp, true),
-                                                ("testkeys:hash - second_hash", second_hash_resp, true),
-                                                ("testkeys:set - all members", format!("{}", set_resp.join(" ")), true),
-                                                ("testkeys:list - all items", format!("{}", list_resp.join(" ")), true),
-                                                ("Raw testkeys:json", json_resp, true),
-                                                ("is-this-working field from testkeys:json", is_working_resp, true),
-                                                ("is-this-fromredis field from testkeys:json", is_this_fromredis_resp, true
-                                            )];
+        ("testkeys:string", string_resp, true),
+        ("testkeys:hash - first_hash", first_hash_resp, true),
+        ("testkeys:hash - second_hash", second_hash_resp, true),
+        (
+            "testkeys:set - all members",
+            format!("{}", set_resp.join(" ")),
+            true,
+        ),
+        (
+            "testkeys:list - all items",
+            format!("{}", list_resp.join(" ")),
+            true,
+        ),
+        ("Raw testkeys:json", json_resp, true),
+        (
+            "is-this-working field from testkeys:json",
+            is_working_resp,
+            true,
+        ),
+        (
+            "is-this-fromredis field from testkeys:json",
+            is_this_fromredis_resp,
+            true,
+        ),
+    ];
 
     // ctx.say(json_resp).await?;
 
-    ctx.send(|f| f
-    .embed(|f| f
-    .title("Redis Test")
-    .description("Each field here is a different request and should be unique")
-    .fields(fields)
-    .colour((220, 56, 44)))).await?;
+    ctx.send(|f| {
+        f.embed(|f| {
+            f.title("Redis Test")
+                .description("Each field here is a different request and should be unique")
+                .fields(fields)
+                .colour((220, 56, 44))
+        })
+    })
+    .await?;
 
     Ok(())
 }
@@ -166,15 +207,11 @@ async fn info(ctx: Context<'_>) -> Result<(), Error> {
 
 /// OwOifys your message
 #[poise::command(prefix_command, slash_command, category = "Fun")]
-async fn owo(
-    ctx: Context<'_>,
-    #[description = "Message"] msg: String,
-) -> Result<(), Error> {
+async fn owo(ctx: Context<'_>, #[description = "Message"] msg: String) -> Result<(), Error> {
     ctx.say(String::from(msg).owoify()).await?;
 
     Ok(())
 }
-
 
 /// Get an AniList entry for an Anime
 #[poise::command(prefix_command, slash_command, category = "Fun")]
@@ -192,15 +229,16 @@ async fn anime(
     let json = json!({"query": ANIME_QUERY, "variables": {"search": format!("{}", msg)}});
 
     // Make HTTP post request
-    let resp = client.post("https://graphql.anilist.co/")
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .body(json.to_string())
-                .send()
-                .await
-                .unwrap()
-                .text()
-                .await;
+    let resp = client
+        .post("https://graphql.anilist.co/")
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .body(json.to_string())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await;
 
     // Get json
     let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
@@ -208,7 +246,13 @@ async fn anime(
     let formatted_json = format!("{:#?}", result);
 
     // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
-    let description = from_read(result["data"]["Media"]["description"].as_str().unwrap().as_bytes(), 50);
+    let description = from_read(
+        result["data"]["Media"]["description"]
+            .as_str()
+            .unwrap()
+            .as_bytes(),
+        50,
+    );
     let status = result["data"]["Media"]["status"].as_str().unwrap();
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
     let episode_count = result["data"]["Media"]["episodes"].as_u64().unwrap();
@@ -217,21 +261,27 @@ async fn anime(
     let median_score = result["data"]["Media"]["meanScore"].as_u64().unwrap();
     let adult = result["data"]["Media"]["isAdult"].as_bool().unwrap();
 
-
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     if result["data"]["Media"]["title"]["english"].as_str() != None {
-        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
+        english_title = result["data"]["Media"]["title"]["english"]
+            .as_str()
+            .unwrap();
     }
-
 
     let mut base_colour = "#aed6f1";
     if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
-        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
+        base_colour = result["data"]["Media"]["coverImage"]["color"]
+            .as_str()
+            .unwrap();
     }
 
-    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
-    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"]
+        .as_str()
+        .unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"]
+        .as_str()
+        .unwrap();
 
     let mut season = "N/A";
     if result["data"]["Media"]["season"].as_str() != None {
@@ -239,31 +289,38 @@ async fn anime(
     }
 
     let mut start_year: i64 = -1;
-    if result["data"]["Media"]["startDate"]["year"].as_i64() != None{
-        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
+        start_year = result["data"]["Media"]["startDate"]["year"]
+            .as_i64()
+            .unwrap();
     }
     let mut start_month: i64 = -1;
-    if result["data"]["Media"]["startDate"]["month"].as_i64() != None{
-        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
+        start_month = result["data"]["Media"]["startDate"]["month"]
+            .as_i64()
+            .unwrap();
     }
     let mut start_day: i64 = -1;
-    if result["data"]["Media"]["startDate"]["day"].as_i64() != None{
-        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
+        start_day = result["data"]["Media"]["startDate"]["day"]
+            .as_i64()
+            .unwrap();
     }
-    
+
     let mut end_year: i64 = -1;
-    if result["data"]["Media"]["endDate"]["year"].as_i64() != None{
+    if result["data"]["Media"]["endDate"]["year"].as_i64() != None {
         end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
     }
     let mut end_month: i64 = -1;
-    if result["data"]["Media"]["endDate"]["month"].as_i64() != None{
-        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
+    if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
+        end_month = result["data"]["Media"]["endDate"]["month"]
+            .as_i64()
+            .unwrap();
     }
     let mut end_day: i64 = -1;
-    if result["data"]["Media"]["endDate"]["day"].as_i64() != None{
+    if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
         end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
     }
-
 
     let without_prefix = base_colour.trim_start_matches("#");
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
@@ -272,50 +329,62 @@ async fn anime(
         ("English Name", format!("{}", english_title), true),
         ("Romaji Name", format!("{}", romaji_title), true),
         ("Description", format!("{}", description), false),
-        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
-        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
+        (
+            "Start Date",
+            format!("{} {}/{}/{}", season, start_year, start_month, start_day),
+            true,
+        ),
+        (
+            "End Date",
+            format!("{}/{}/{}", end_year, end_month, end_day),
+            true,
+        ),
         ("Status", format!("{}", status), true),
         ("Episode Count", format!("{}", episode_count), true),
-        ("Episode Length", format!("{} minutes", average_episode_length), true),
+        (
+            "Episode Length",
+            format!("{} minutes", average_episode_length),
+            true,
+        ),
         ("Average score", format!("{}", average_score), true),
         ("Mean score", format!("{}", median_score), true),
         ("Is adult?", format!("{}", adult), true),
     ];
-        
-        
+
     if raw != None {
         if raw.unwrap() == true {
-            ctx.send(|f| f
-                .content("Anime result")
-                .ephemeral(false)
-                .attachment(AttachmentType::Bytes { data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()), filename: String::from("Anime.json") })
-                ).await?;
-        }
-        else {
-            ctx.send(|f| f
-                .embed(|b| b
-                .colour(Colour::from(colour_i32).tuple())
-                .description("Anime Result")
-                .image(image)
-                .author(|f| f
-                .icon_url(small_image)
-                .name("AniList")
-                .url(anilist_url))
-                .fields(field_list)
-                )).await?;
+            ctx.send(|f| {
+                f.content("Anime result")
+                    .ephemeral(false)
+                    .attachment(AttachmentType::Bytes {
+                        data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
+                        filename: String::from("Anime.json"),
+                    })
+            })
+            .await?;
+        } else {
+            ctx.send(|f| {
+                f.embed(|b| {
+                    b.colour(Colour::from(colour_i32).tuple())
+                        .description("Anime Result")
+                        .image(image)
+                        .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
+                        .fields(field_list)
+                })
+            })
+            .await?;
         }
     } else {
-        ctx.send(|f| f
-            .embed(|b| b
-            .colour(Colour::from(colour_i32).tuple())
-            .description("Anime Result")
-            .image(image)
-            .author(|f| f
-            .icon_url(small_image)
-            .name("AniList")
-            .url(anilist_url))
-            .fields(field_list)
-            )).await?;
+        ctx.send(|f| {
+            f.embed(|b| {
+                b.colour(Colour::from(colour_i32).tuple())
+                    .description("Anime Result")
+                    .image(image)
+                    .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
+                    .fields(field_list)
+            })
+        })
+        .await?;
     }
     Ok(())
 }
@@ -336,15 +405,16 @@ async fn manga(
     let json = json!({"query": MANGA_QUERY, "variables": {"search": format!("{}", msg)}});
 
     // Make HTTP post request
-    let resp = client.post("https://graphql.anilist.co/")
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .body(json.to_string())
-                .send()
-                .await
-                .unwrap()
-                .text()
-                .await;
+    let resp = client
+        .post("https://graphql.anilist.co/")
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .body(json.to_string())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await;
 
     // Get json
     let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
@@ -353,22 +423,32 @@ async fn manga(
 
     if raw != None {
         if raw.unwrap() == true {
-            ctx.send(|f| f
-                .content("Anime result")
-                .ephemeral(false)
-                .attachment(AttachmentType::Bytes { data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()), filename: String::from("Anime.json") })
-                ).await?;
-            
+            ctx.send(|f| {
+                f.content("Anime result")
+                    .ephemeral(false)
+                    .attachment(AttachmentType::Bytes {
+                        data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
+                        filename: String::from("Anime.json"),
+                    })
+            })
+            .await?;
+
             return Ok(());
         }
     }
 
     // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
-    let description = from_read(result["data"]["Media"]["description"].as_str().unwrap().as_bytes(), 50);
+    let description = from_read(
+        result["data"]["Media"]["description"]
+            .as_str()
+            .unwrap()
+            .as_bytes(),
+        50,
+    );
     let status = result["data"]["Media"]["status"].as_str().unwrap();
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
     let mut volume_count: i64 = -1;
-    if result["data"]["Media"]["volumes"].as_i64() != None{
+    if result["data"]["Media"]["volumes"].as_i64() != None {
         volume_count = result["data"]["Media"]["volumes"].as_i64().unwrap();
     }
     let chapter_coumt = result["data"]["Media"]["chapters"].as_u64().unwrap();
@@ -379,17 +459,24 @@ async fn manga(
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     if result["data"]["Media"]["title"]["english"].as_str() != None {
-        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
+        english_title = result["data"]["Media"]["title"]["english"]
+            .as_str()
+            .unwrap();
     }
-
 
     let mut base_colour = "#aed6f1";
     if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
-        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
+        base_colour = result["data"]["Media"]["coverImage"]["color"]
+            .as_str()
+            .unwrap();
     }
 
-    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
-    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"]
+        .as_str()
+        .unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"]
+        .as_str()
+        .unwrap();
 
     let mut season = "N/A";
     if result["data"]["Media"]["season"].as_str() != None {
@@ -397,31 +484,38 @@ async fn manga(
     }
 
     let mut start_year: i64 = -1;
-    if result["data"]["Media"]["startDate"]["year"].as_i64() != None{
-        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
+        start_year = result["data"]["Media"]["startDate"]["year"]
+            .as_i64()
+            .unwrap();
     }
     let mut start_month: i64 = -1;
-    if result["data"]["Media"]["startDate"]["month"].as_i64() != None{
-        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
+        start_month = result["data"]["Media"]["startDate"]["month"]
+            .as_i64()
+            .unwrap();
     }
     let mut start_day: i64 = -1;
-    if result["data"]["Media"]["startDate"]["day"].as_i64() != None{
-        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
+    if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
+        start_day = result["data"]["Media"]["startDate"]["day"]
+            .as_i64()
+            .unwrap();
     }
-    
+
     let mut end_year: i64 = -1;
-    if result["data"]["Media"]["endDate"]["year"].as_i64() != None{
+    if result["data"]["Media"]["endDate"]["year"].as_i64() != None {
         end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
     }
     let mut end_month: i64 = -1;
-    if result["data"]["Media"]["endDate"]["month"].as_i64() != None{
-        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
+    if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
+        end_month = result["data"]["Media"]["endDate"]["month"]
+            .as_i64()
+            .unwrap();
     }
     let mut end_day: i64 = -1;
-    if result["data"]["Media"]["endDate"]["day"].as_i64() != None{
+    if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
         end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
     }
-
 
     let without_prefix = base_colour.trim_start_matches("#");
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
@@ -430,8 +524,16 @@ async fn manga(
         ("English Name", format!("{}", english_title), true),
         ("Romaji Name", format!("{}", romaji_title), true),
         ("Description", format!("{}", description), false),
-        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
-        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
+        (
+            "Start Date",
+            format!("{} {}/{}/{}", season, start_year, start_month, start_day),
+            true,
+        ),
+        (
+            "End Date",
+            format!("{}/{}/{}", end_year, end_month, end_day),
+            true,
+        ),
         ("Status", format!("{}", status), true),
         ("Volume Count", format!("{}", volume_count), true),
         ("Chapter Count", format!("{} minutes", chapter_coumt), true),
@@ -439,28 +541,23 @@ async fn manga(
         ("Mean Score", format!("{}", median_score), true),
         ("Is Adult?", format!("{}", adult), true),
     ];
-        
-        
-    
-     
-    ctx.send(|f| f
-        .embed(|b| b
-        .colour(Colour::from(colour_i32).tuple())
-        .description("Anime Result")
-        .image(image)
-        .author(|f| f
-        .icon_url(small_image)
-        .name("AniList")
-        .url(anilist_url))
-        .fields(field_list)
-        )).await?;
+
+    ctx.send(|f| {
+        f.embed(|b| {
+            b.colour(Colour::from(colour_i32).tuple())
+                .description("Anime Result")
+                .image(image)
+                .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
+                .fields(field_list)
+        })
+    })
+    .await?;
     Ok(())
 }
 
 /// Tests multithreded functionality. use -t to show how long the threads live for
 #[poise::command(prefix_command, slash_command, category = "Testing")]
-async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> 
-{
+async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> {
     // Main math channels
     let (tx1, rx1) = mpsc::channel();
     let (tx2, rx2) = mpsc::channel();
@@ -541,7 +638,6 @@ fn snowflake_to_unix(id: u128) -> u128 {
     return unix_timecode;
 }
 
-
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
@@ -550,17 +646,15 @@ async fn main() {
     let dtoken: String;
 
     if args.token == "" {
-        dtoken = env::var("RUSTED_WUMPUS_DISCORD_TOKEN").expect("No discord token in environment variables or command line arguments");
+        dtoken = env::var("RUSTED_WUMPUS_DISCORD_TOKEN")
+            .expect("No discord token in environment variables or command line arguments");
     } else {
         dtoken = args.token;
     }
 
-
     let framework = poise::Framework::build()
         .token(dtoken)
-        .intents(
-            serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT,
-        )
+        .intents(serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT)
         .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
         .options(poise::FrameworkOptions {
             // configure framework here
@@ -584,7 +678,6 @@ async fn main() {
             },
             ..Default::default()
         });
-        
-        framework.run().await.unwrap();
-}
 
+    framework.run().await.unwrap();
+}
