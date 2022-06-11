@@ -21,7 +21,7 @@ jobs:
           command: "mkdir /tmp/artifacts"
       - run:
           name: "build"
-          command: "cargo build -j 2 --release --target-dir /tmp/artifacts"
+          command: "cargo build -j 4 --release --target-dir /tmp/artifacts"
       - store_artifacts:
           path: /tmp/artifacts/release/rusted_wumpus
   
