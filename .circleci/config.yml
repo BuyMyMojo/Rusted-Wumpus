@@ -28,7 +28,7 @@ jobs:
   windows-build:
         executor: 
           name: windows/default
-          size: xlarge
+          size: large
 
         environment:
             CARGO_NET_GIT_FETCH_WITH_CLI: "true"
