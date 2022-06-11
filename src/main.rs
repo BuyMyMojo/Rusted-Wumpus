@@ -15,21 +15,18 @@ use owoify::OwOifiable;
 
 use poise::{serenity_prelude as serenity};
 
-use std::{env, array};
+use std::{env};
+
+// Variables stores more cleanly
+mod vars;
+use vars::ANIME_QUERY;
+use vars::MANGA_QUERY;
+use vars::INFO_MESSAGE;
 
 type Data = ();
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-
-// I wounder if storing this text as a const is more efficient then just putting it inside the reply function? I will ask around later.
-const INFO_MESSAGE: &str = "
-Hello there, Human!
-
-This is just an example message I am making as a test for this bot!
-
-— RustBot 🤖
-";
 
 /// Show this help menu
 #[poise::command(prefix_command, track_edits, slash_command, category = "Info")]
@@ -115,94 +112,6 @@ async fn owo(
     Ok(())
 }
 
-// Query to use in AniList request
-const ANIME_QUERY: &str = "
-query ($search: String) { # Define which variables will be used in the query (id)
-  Media (search: $search, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
-    id
-    title {
-      romaji
-      english
-      native
-    }
-    status
-    description
-    startDate {
-        year
-        month
-        day
-    }
-    endDate {
-        year
-        month
-        day
-    }
-    coverImage {
-        extraLarge
-        large
-        color
-    }
-    season
-    seasonYear
-    seasonInt
-    episodes
-    duration
-    hashtag
-    trailer {
-        id
-        site
-        thumbnail
-    }
-    genres
-    averageScore
-    meanScore
-    isAdult
-    siteUrl
-  }
-}
-";
-
-// Query to use in AniList request
-const MANGA_QUERY: &str = "
-query ($search: String) { # Define which variables will be used in the query (id)
-  Media (search: $search, type: MANGA) { # Insert our variables into the query arguments (id) (type: MANGA is hard-coded in the query)
-    id
-    title {
-      romaji
-      english
-      native
-    }
-    status
-    description
-    startDate {
-        year
-        month
-        day
-    }
-    endDate {
-        year
-        month
-        day
-    }
-    coverImage {
-        extraLarge
-        large
-        color
-    }
-    volumes
-    chapters
-    season
-    seasonYear
-    seasonInt
-    hashtag
-    genres
-    averageScore
-    meanScore
-    isAdult
-    siteUrl
-  }
-}
-";
 
 /// Get an AniList entry for an Anime
 #[poise::command(prefix_command, slash_command, category = "Fun")]
@@ -603,3 +512,4 @@ async fn main() {
         
         framework.run().await.unwrap();
 }
+
