@@ -11,7 +11,7 @@ jobs:
   linux-build:
     docker:
       - image: cimg/rust:1.59.0
-    resource_class: 2xlarge
+    resource_class: xlarge
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
