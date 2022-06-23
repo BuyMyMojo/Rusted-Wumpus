@@ -26,6 +26,7 @@ mod vars;
 use vars::ANIME_QUERY;
 use vars::INFO_MESSAGE;
 use vars::MANGA_QUERY;
+use vars::HELP_EXTRA_TEXT;
 
 type Data = ();
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -55,8 +56,7 @@ async fn help(
         ctx,
         command.as_deref(),
         poise::builtins::HelpConfiguration {
-            extra_text_at_bottom: "\
-This is a test bot I made to learn Rust",
+            extra_text_at_bottom: HELP_EXTRA_TEXT,
             show_context_menu_commands: true,
             ..Default::default()
         },

@@ -99,3 +99,9 @@ query ($search: String) { # Define which variables will be used in the query (id
   }
 }
 ";
+
+pub const HELP_EXTRA_TEXT: &str = "This is a test bot I made to learn Rust
+
+Made by: BuyMyMojo#0308
+Website: https://buymymojo.net/
+Code: https://github.com/BuyMyMojo/Rusted-Wumpus";
