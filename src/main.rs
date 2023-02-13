@@ -619,10 +619,15 @@ async fn creationdate(
 ) -> Result<(), Error> {
     let unix_timecode = snowflake_to_unix(snowflake_id);
 
-    let date_time_stamp = NaiveDateTime::from_timestamp(unix_timecode as i64, 0);
+    let date_time_stamp = NaiveDateTime::from_timestamp_opt(unix_timecode as i64, 0);
 
-    ctx.say(format!("Created/Joined on {}", date_time_stamp))
+    if date_time_stamp.is_none() {
+        ctx.say("Unable to retrive timestamp from snowflake").await?;
+    } else {
+        ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap()))
         .await?;
+    }
+
 
     Ok(())
 }
@@ -654,10 +659,10 @@ async fn main() {
         dtoken = args.token;
     }
 
-    let framework = poise::Framework::build()
+    let framework = poise::Framework::builder()
         .token(dtoken)
         .intents(serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT)
-        .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
+        .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
         .options(poise::FrameworkOptions {
             // configure framework here
             commands: vec![
