@@ -7,7 +7,7 @@ authors = ["BuyMyMojo <https://github.com/BuyMyMojo>"]
 repository = "https://github.com/BuyMyMojo/Rusted-Wumpus"
 license-file = "LICENSE"
 keywords = ["discord", "bot"]
-description = "A general discord bot made in rust as a learning experince"
+description = "A general discord bot made in rust as a personal learning experince"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,8 +20,15 @@ quote = "1.0.18"
 serde_json = "1.0.81"
 reqwest = "0.11.10"
 serde = "1.0.137"
-html2text = "*"
-owoify = "*"
-redis = "*"
-clap = { version = "4.1.4", features = ["derive"] }
-anyhow = "1.0.69"
+html2text = "0.4.5"
+owoify = "0.1.5"
+# redis = "0.22.3"
+clap = { version = "4.1.4", features = ["derive", "env"] }
+sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ], optional = true }
+dotenv = { version = "0.15.0", features = ["clap"] }
+
+
+[features]
+default = ["postgres", "testing"]
+postgres = ["dep:sqlx"]
+testing = []

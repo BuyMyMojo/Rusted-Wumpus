@@ -1,5 +1,3 @@
-extern crate redis;
-
 use chrono::NaiveDateTime;
 
 use poise::serenity_prelude::{AttachmentType, Colour};
@@ -8,7 +6,8 @@ use reqwest::Client;
 use serde_json::json;
 
 use html2text::from_read;
-
+use sqlx::postgres::PgPoolOptions;
+use dotenv::dotenv;
 use std::time::Instant;
 
 use std::{sync::mpsc, thread}; // Multithreading // Time tracking
@@ -17,30 +16,40 @@ use owoify::OwOifiable;
 
 use poise::serenity_prelude as serenity;
 
-use std::{env, vec};
+use std::vec;
 
 use clap::Parser;
 
 // Variables stores more cleanly
 mod vars;
 use vars::ANIME_QUERY;
+use vars::HELP_EXTRA_TEXT;
 use vars::INFO_MESSAGE;
 use vars::MANGA_QUERY;
-use vars::HELP_EXTRA_TEXT;
 
-type Data = ();
-type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
+mod commands;
+use commands::quotes;
+
+pub struct Data {
+    pub db: sqlx::PgPool,
+}
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
-struct Args {
+pub struct Args {
     /// Address of Redis server
-    #[clap(short, long, default_value = "redis://localhost:49153/")]
-    redis_address: String,
+    #[clap(
+        short,
+        long,
+        env = "DATABASE_URL",
+        default_value = "postgres://postgres:postgres@localhost/postgres"
+    )]
+    database_url: String,
 
     /// Discord bot token
-    #[clap(short, long, default_value = "")]
+    #[clap(short, long, env = "BOT_TOKEN", default_value = "")]
     token: String,
 }
 
@@ -89,12 +98,9 @@ pub async fn age(
 /// Run with no arguments to register in guild, run with argument "global" to register globally.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
 async fn register(
-    ctx: Context<'_>,
-    #[flag]
-    #[description = "Register commands globally"]
-    global: bool,
+    ctx: Context<'_>
 ) -> Result<(), Error> {
-    poise::builtins::register_application_commands(ctx, global).await?;
+    poise::samples::register_application_commands_buttons(ctx).await?;
 
     Ok(())
 }
@@ -103,88 +109,6 @@ async fn register(
 #[poise::command(prefix_command, slash_command, category = "Miscellaneous")]
 async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("Pong!").await?;
-
-    Ok(())
-}
-
-/// Test to see if data can get pulled from redis
-#[poise::command(prefix_command, slash_command, category = "Miscellaneous")]
-async fn redis(ctx: Context<'_>) -> Result<(), Error> {
-    let args = Args::parse();
-
-    let client = redis::Client::open(args.redis_address)?;
-    let mut con = client.get_connection()?;
-
-    let string_resp: String = redis::cmd("GET").arg("testkeys:string").query(&mut con)?;
-
-    let set_resp: Vec<String> = redis::cmd("SMEMBERS").arg("testkeys:set").query(&mut con)?;
-
-    let list_len: isize = redis::cmd("LLEN").arg("testkeys:list").query(&mut con)?;
-    let list_resp: Vec<String> = redis::cmd("LRANGE")
-        .arg("testkeys:list")
-        .arg(0)
-        .arg(list_len - 1)
-        .query(&mut con)?;
-
-    let first_hash_resp: String = redis::cmd("HGET")
-        .arg("testkeys:hash")
-        .arg("first_hash")
-        .query(&mut con)?;
-    let second_hash_resp: String = redis::cmd("HGET")
-        .arg("testkeys:hash")
-        .arg("second_hash")
-        .query(&mut con)?;
-
-    let json_resp: String = redis::cmd("JSON.GET")
-        .arg("testkeys:json")
-        .query(&mut con)?;
-    let is_working_resp: String = redis::cmd("JSON.GET")
-        .arg("testkeys:json")
-        .arg("is-this-working")
-        .query(&mut con)?;
-    let is_this_fromredis_resp: String = redis::cmd("JSON.GET")
-        .arg("testkeys:json")
-        .arg("is-this-fromredis")
-        .query(&mut con)?;
-
-    let fields = [
-        ("testkeys:string", string_resp, true),
-        ("testkeys:hash - first_hash", first_hash_resp, true),
-        ("testkeys:hash - second_hash", second_hash_resp, true),
-        (
-            "testkeys:set - all members",
-            format!("{}", set_resp.join(" ")),
-            true,
-        ),
-        (
-            "testkeys:list - all items",
-            format!("{}", list_resp.join(" ")),
-            true,
-        ),
-        ("Raw testkeys:json", json_resp, true),
-        (
-            "is-this-working field from testkeys:json",
-            is_working_resp,
-            true,
-        ),
-        (
-            "is-this-fromredis field from testkeys:json",
-            is_this_fromredis_resp,
-            true,
-        ),
-    ];
-
-    // ctx.say(json_resp).await?;
-
-    ctx.send(|f| {
-        f.embed(|f| {
-            f.title("Redis Test")
-                .description("Each field here is a different request and should be unique")
-                .fields(fields)
-                .colour((220, 56, 44))
-        })
-    })
-    .await?;
 
     Ok(())
 }
@@ -557,6 +481,7 @@ async fn manga(
 
 /// Tests multithreaded functionality. use -t to show how long the threads live for
 #[poise::command(prefix_command, slash_command, category = "Testing")]
+#[cfg(feature = "testing")]
 async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> {
     // Main math channels
     let (tx1, rx1) = mpsc::channel();
@@ -622,12 +547,12 @@ async fn creationdate(
     let date_time_stamp = NaiveDateTime::from_timestamp_opt(unix_timecode as i64, 0);
 
     if date_time_stamp.is_none() {
-        ctx.say("Unable to retrieve timestamp from snowflake").await?;
+        ctx.say("Unable to retrieve timestamp from snowflake")
+            .await?;
     } else {
         ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap()))
-        .await?;
+            .await?;
     }
-
 
     Ok(())
 }
@@ -643,42 +568,60 @@ fn snowflake_to_unix(id: u128) -> u128 {
     return unix_timecode;
 }
 
-// TODO: Add quote command with redis storage
+// TODO: Add quote command with postgres storage
+
+// bug: test
 
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
     let args = Args::parse();
 
-    let dtoken: String;
+    let db = PgPoolOptions::new()
+        .max_connections(10)
+        .connect(&args.database_url)
+        .await.expect("Unable to connect to the DB!");
 
-    if args.token == "" {
-        dtoken = env::var("RUSTED_WUMPUS_DISCORD_TOKEN")
-            .expect("No discord token in environment variables or command line arguments");
-    } else {
-        dtoken = args.token;
+    let data = Data { db: db.clone() };
+
+    let mut bot_commands = vec![
+        age(),
+        help(),
+        register(),
+        ping(),
+        info(),
+        owo(),
+        creationdate(),
+        pog(),
+        anime(),
+        manga(),
+    ];
+
+    #[cfg(feature = "testing")]
+    {
+        bot_commands.push(threadtest());
+    }
+
+    #[cfg(feature = "postgres")]
+    {   
+        let mut post_features = vec![
+            quotes::getquote(),
+            quotes::addquote(),
+            quotes::randquote()
+        ];
+        bot_commands.append(
+            &mut post_features
+        );
     }
 
     let framework = poise::Framework::builder()
-        .token(dtoken)
+        .token(args.token)
         .intents(serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT)
-        .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(()) }))
+        .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(data) }))
         .options(poise::FrameworkOptions {
             // configure framework here
-            commands: vec![
-                age(),
-                help(),
-                register(),
-                ping(),
-                info(),
-                owo(),
-                threadtest(),
-                creationdate(),
-                pog(),
-                anime(),
-                manga(),
-                redis(),
-            ],
+            commands: bot_commands,
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some("<>".into()),
                 ..Default::default()
