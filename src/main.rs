@@ -220,7 +220,7 @@ async fn anime(
     #[description = "Name"] msg: String,
     #[description = "Output raw json"] raw: Option<bool>,
 ) -> Result<(), Error> {
-    // Tell discord wait longer then 3 secconds
+    // Tell discord wait longer then 3 seconds
     ctx.defer().await?;
 
     let client = Client::new();
@@ -396,7 +396,7 @@ async fn manga(
     #[description = "Name"] msg: String,
     #[description = "Output raw json"] raw: Option<bool>,
 ) -> Result<(), Error> {
-    // Tell discord wait longer then 3 secconds
+    // Tell discord wait longer then 3 seconds
     ctx.defer().await?;
 
     let client = Client::new();
@@ -555,14 +555,14 @@ async fn manga(
     Ok(())
 }
 
-/// Tests multithreded functionality. use -t to show how long the threads live for
+/// Tests multithreaded functionality. use -t to show how long the threads live for
 #[poise::command(prefix_command, slash_command, category = "Testing")]
 async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> Result<(), Error> {
     // Main math channels
     let (tx1, rx1) = mpsc::channel();
     let (tx2, rx2) = mpsc::channel();
 
-    // Optional duration cahnnels
+    // Optional duration channels
     let (tx3, rx3) = mpsc::channel();
     let (tx4, rx4) = mpsc::channel();
 
@@ -622,7 +622,7 @@ async fn creationdate(
     let date_time_stamp = NaiveDateTime::from_timestamp_opt(unix_timecode as i64, 0);
 
     if date_time_stamp.is_none() {
-        ctx.say("Unable to retrive timestamp from snowflake").await?;
+        ctx.say("Unable to retrieve timestamp from snowflake").await?;
     } else {
         ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap()))
         .await?;
