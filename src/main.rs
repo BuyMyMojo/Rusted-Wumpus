@@ -569,10 +569,6 @@ fn snowflake_to_unix(id: u128) -> u128 {
     return unix_timecode;
 }
 
-// TODO: Add quote command with postgres storage
-
-// bug: test
-
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
