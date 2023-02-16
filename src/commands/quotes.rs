@@ -13,7 +13,7 @@ pub async fn getquote(
     let pool = ctx.data().db.clone();
 
     let row: QuoteRow = sqlx::query_as("SELECT quote FROM quotes WHERE id = $1")
-        .bind(&quote_id.trim())
+        .bind(quote_id.trim())
         .fetch_one(&pool)
         .await?;
 
@@ -54,7 +54,7 @@ pub async fn addquote(ctx: Context<'_>, #[description = "ID"] quote: String) -> 
     let pool = ctx.data().db.clone();
 
     let row: QuoteRow = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2) RETURNING *")
-        .bind(&quote.trim())
+        .bind(quote.trim())
         .bind(ctx.author().id.0.to_string())
         .fetch_one(&pool)
         .await?;

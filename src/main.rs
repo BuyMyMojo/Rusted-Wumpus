@@ -138,7 +138,7 @@ async fn info(ctx: Context<'_>) -> Result<(), Error> {
 /// OwOifys your message
 #[poise::command(prefix_command, slash_command, category = "Fun")]
 async fn owo(ctx: Context<'_>, #[description = "Message"] msg: String) -> Result<(), Error> {
-    ctx.say(String::from(msg).owoify()).await?;
+    ctx.say(msg.owoify()).await?;
 
     Ok(())
 }
@@ -194,14 +194,14 @@ async fn anime(
 
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
-    if result["data"]["Media"]["title"]["english"].as_str() != None {
+    if result["data"]["Media"]["title"]["english"].as_str().is_some() {
         english_title = result["data"]["Media"]["title"]["english"]
             .as_str()
             .unwrap();
     }
 
     let mut base_colour = "#aed6f1";
-    if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
+    if result["data"]["Media"]["coverImage"]["color"].as_str().is_some() {
         base_colour = result["data"]["Media"]["coverImage"]["color"]
             .as_str()
             .unwrap();
@@ -215,51 +215,51 @@ async fn anime(
         .unwrap();
 
     let mut season = "N/A";
-    if result["data"]["Media"]["season"].as_str() != None {
+    if result["data"]["Media"]["season"].as_str().is_some() {
         season = result["data"]["Media"]["season"].as_str().unwrap();
     }
 
     let mut start_year: i64 = -1;
-    if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["year"].as_i64().is_some() {
         start_year = result["data"]["Media"]["startDate"]["year"]
             .as_i64()
             .unwrap();
     }
     let mut start_month: i64 = -1;
-    if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["month"].as_i64().is_some() {
         start_month = result["data"]["Media"]["startDate"]["month"]
             .as_i64()
             .unwrap();
     }
     let mut start_day: i64 = -1;
-    if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["day"].as_i64().is_some() {
         start_day = result["data"]["Media"]["startDate"]["day"]
             .as_i64()
             .unwrap();
     }
 
     let mut end_year: i64 = -1;
-    if result["data"]["Media"]["endDate"]["year"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["year"].as_i64().is_some() {
         end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
     }
     let mut end_month: i64 = -1;
-    if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["month"].as_i64().is_some() {
         end_month = result["data"]["Media"]["endDate"]["month"]
             .as_i64()
             .unwrap();
     }
     let mut end_day: i64 = -1;
-    if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["day"].as_i64().is_some() {
         end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
     }
 
-    let without_prefix = base_colour.trim_start_matches("#");
+    let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
 
     let field_list = [
-        ("English Name", format!("{}", english_title), true),
-        ("Romaji Name", format!("{}", romaji_title), true),
-        ("Description", format!("{}", description), false),
+        ("English Name", english_title.to_string(), true),
+        ("Romaji Name", romaji_title.to_string(), true),
+        ("Description", description.to_string(), false),
         (
             "Start Date",
             format!("{} {}/{}/{}", season, start_year, start_month, start_day),
@@ -270,7 +270,7 @@ async fn anime(
             format!("{}/{}/{}", end_year, end_month, end_day),
             true,
         ),
-        ("Status", format!("{}", status), true),
+        ("Status", status.to_string(), true),
         ("Episode Count", format!("{}", episode_count), true),
         (
             "Episode Length",
@@ -282,8 +282,8 @@ async fn anime(
         ("Is adult?", format!("{}", adult), true),
     ];
 
-    if raw != None {
-        if raw.unwrap() == true {
+    if raw.is_some() {
+        if raw.unwrap() {
             ctx.send(|f| {
                 f.content("Anime result")
                     .ephemeral(false)
@@ -353,20 +353,18 @@ async fn manga(
 
     let formatted_json = format!("{:#?}", result);
 
-    if raw != None {
-        if raw.unwrap() == true {
-            ctx.send(|f| {
-                f.content("Anime result")
-                    .ephemeral(false)
-                    .attachment(AttachmentType::Bytes {
-                        data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
-                        filename: String::from("Anime.json"),
-                    })
-            })
-            .await?;
+    if raw.is_some() && raw.unwrap() {
+        ctx.send(|f| {
+            f.content("Anime result")
+                .ephemeral(false)
+                .attachment(AttachmentType::Bytes {
+                    data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
+                    filename: String::from("Anime.json"),
+                })
+        })
+        .await?;
 
-            return Ok(());
-        }
+        return Ok(());
     }
 
     // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
@@ -380,7 +378,7 @@ async fn manga(
     let status = result["data"]["Media"]["status"].as_str().unwrap();
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
     let mut volume_count: i64 = -1;
-    if result["data"]["Media"]["volumes"].as_i64() != None {
+    if result["data"]["Media"]["volumes"].as_i64().is_some() {
         volume_count = result["data"]["Media"]["volumes"].as_i64().unwrap();
     }
     let chapter_coumt = result["data"]["Media"]["chapters"].as_u64().unwrap();
@@ -390,14 +388,14 @@ async fn manga(
 
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
-    if result["data"]["Media"]["title"]["english"].as_str() != None {
+    if result["data"]["Media"]["title"]["english"].as_str().is_some() {
         english_title = result["data"]["Media"]["title"]["english"]
             .as_str()
             .unwrap();
     }
 
     let mut base_colour = "#aed6f1";
-    if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
+    if result["data"]["Media"]["coverImage"]["color"].as_str().is_some() {
         base_colour = result["data"]["Media"]["coverImage"]["color"]
             .as_str()
             .unwrap();
@@ -411,51 +409,51 @@ async fn manga(
         .unwrap();
 
     let mut season = "N/A";
-    if result["data"]["Media"]["season"].as_str() != None {
+    if result["data"]["Media"]["season"].as_str().is_some() {
         season = result["data"]["Media"]["season"].as_str().unwrap();
     }
 
     let mut start_year: i64 = -1;
-    if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["year"].as_i64().is_some() {
         start_year = result["data"]["Media"]["startDate"]["year"]
             .as_i64()
             .unwrap();
     }
     let mut start_month: i64 = -1;
-    if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["month"].as_i64().is_some() {
         start_month = result["data"]["Media"]["startDate"]["month"]
             .as_i64()
             .unwrap();
     }
     let mut start_day: i64 = -1;
-    if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
+    if result["data"]["Media"]["startDate"]["day"].as_i64().is_some() {
         start_day = result["data"]["Media"]["startDate"]["day"]
             .as_i64()
             .unwrap();
     }
 
     let mut end_year: i64 = -1;
-    if result["data"]["Media"]["endDate"]["year"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["year"].as_i64().is_some() {
         end_year = result["data"]["Media"]["endDate"]["year"].as_i64().unwrap();
     }
     let mut end_month: i64 = -1;
-    if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["month"].as_i64().is_some() {
         end_month = result["data"]["Media"]["endDate"]["month"]
             .as_i64()
             .unwrap();
     }
     let mut end_day: i64 = -1;
-    if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
+    if result["data"]["Media"]["endDate"]["day"].as_i64().is_some() {
         end_day = result["data"]["Media"]["endDate"]["day"].as_i64().unwrap();
     }
 
-    let without_prefix = base_colour.trim_start_matches("#");
+    let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap();
 
     let field_list = [
-        ("English Name", format!("{}", english_title), true),
-        ("Romaji Name", format!("{}", romaji_title), true),
-        ("Description", format!("{}", description), false),
+        ("English Name", english_title.to_string(), true),
+        ("Romaji Name", romaji_title.to_string(), true),
+        ("Description", description.to_string(), false),
         (
             "Start Date",
             format!("{} {}/{}/{}", season, start_year, start_month, start_day),
@@ -466,7 +464,7 @@ async fn manga(
             format!("{}/{}/{}", end_year, end_month, end_day),
             true,
         ),
-        ("Status", format!("{}", status), true),
+        ("Status", status.to_string(), true),
         ("Volume Count", format!("{}", volume_count), true),
         ("Chapter Count", format!("{} minutes", chapter_coumt), true),
         ("Average Score", format!("{}", average_score), true),
@@ -506,7 +504,7 @@ async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> R
         tx1.send(channel_msg).unwrap(); // Send math over channel 1
         println!("Sent {} on channel 1!", channel_msg); // Print once channel 1 takes the message
 
-        let duration = start.elapsed().as_nanos() as f64 / 1000000 as f64; // End time tracking
+        let duration = start.elapsed().as_nanos() as f64 / 1000000_f64; // End time tracking
         tx3.send(duration).unwrap(); // Send the ms taken
     });
 
@@ -515,7 +513,7 @@ async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> R
         let channel_msg = 420 * 2;
         tx2.send(channel_msg).unwrap();
         println!("Sent {} on channel 2!", channel_msg);
-        let duration = start.elapsed().as_nanos() as f64 / 1000000 as f64;
+        let duration = start.elapsed().as_nanos() as f64 / 1000000_f64;
         tx4.send(duration).unwrap();
     });
 
@@ -571,9 +569,7 @@ async fn creationdate(
 fn snowflake_to_unix(id: u128) -> u128 {
     const DISCORD_EPOCH: u128 = 1420070400000;
 
-    let unix_timecode = ((id >> 22) + DISCORD_EPOCH) / 1000;
-
-    return unix_timecode;
+    ((id >> 22) + DISCORD_EPOCH) / 1000
 }
 
 // Handle bot start and settings here
