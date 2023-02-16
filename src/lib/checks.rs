@@ -13,18 +13,15 @@ pub async fn user_db_check(db: Pool<Postgres>, user: User) {
             .await
             .expect_or_log("Failed to select user from db");
 
-    match optional_user {
-        Some(_) => {}
-        None => {
-            let _row: UserRow = sqlx::query_as("INSERT INTO users (id) VALUES ($1) RETURNING *;")
-                .bind(&user.id.0.to_string())
-                .fetch_one(&db)
-                .await
-                .expect_or_log("Failed to add user to db");
+    if let Some(_) = optional_user { } else {
+        let _row: UserRow = sqlx::query_as("INSERT INTO users (id) VALUES ($1) RETURNING *;")
+            .bind(&user.id.0.to_string())
+            .fetch_one(&db)
+            .await
+            .expect_or_log("Failed to add user to db");
 
-            let user_info = format!("ID: {} || Current Useranme: {}", user.id.0, user.name);
+        let user_info = format!("ID: {} || Current Useranme: {}", user.id.0, user.name);
 
-            event!(Level::INFO, "Added new user to `users` db." = user_info);
-        }
+        event!(Level::INFO, "Added new user to `users` db." = user_info);
     }
 }

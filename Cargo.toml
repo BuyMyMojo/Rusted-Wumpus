@@ -16,6 +16,7 @@ repository = "https://github.com/BuyMyMojo/Rusted-Wumpus"
 license-file = "LICENSE"
 keywords = ["discord", "bot"]
 description = "A general discord bot made in rust as a personal learning experince"
+categories = ["web-programming", "text-processing", "parsing"]
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -30,7 +31,6 @@ reqwest = "0.11.10"
 serde = "1.0.137"
 html2text = "0.4.5"
 owoify = "0.1.5"
-# redis = "0.22.3"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ] }
 dotenv = { version = "0.15.0", features = ["clap"] }
