@@ -1,11 +1,8 @@
 use crate::{ Context, Error };
-
-#[derive(Debug, sqlx::FromRow)]
-pub struct Quote {
-    id: String,
-    quote: String,
-    author: String,
-}
+use entity::quote;
+use entity::quote::Entity as Quote;
+use migration::{ Query, Func, Order, FunctionCall, Function };
+use sea_orm::{ EntityTrait, Set };
 
 /// Gets a quote by ID
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
@@ -13,41 +10,41 @@ pub async fn getquote(
     ctx: Context<'_>,
     #[description = "ID"] quote_id: String
 ) -> Result<(), Error> {
-    let pool = ctx.data().db.clone();
+    let result: Option<quote::Model> = Quote::find_by_id(&quote_id).one(&ctx.data().db).await?;
 
-    let row: Quote = sqlx
-        ::query_as("SELECT quote FROM quotes WHERE id = $1")
-        .bind(&quote_id.trim())
-        .fetch_one(&pool).await?;
-
-    ctx.say(format!("Quote {}: {}\nAdded by: {}", row.id, row.quote, row.author)).await?;
-
-    Ok(())
-}
-
-/// Gets a random quote
-#[poise::command(prefix_command, slash_command, category = "Quotes")]
-pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
-    let pool = ctx.data().db.clone();
-
-    let quote: Quote = sqlx
-        ::query_as("SELECT * FROM quotes ORDER BY random() LIMIT 1;")
-        .fetch_one(&pool).await?;
-
-    ctx.say(format!("Quote {}: {}\n Added by: <@{}>", quote.id, quote.quote, quote.author)).await?;
+    match result {
+        None => {
+            ctx.say(format!("Unable to find quote with the ID {}", &quote_id)).await?;
+        }
+        Some(q) => {
+            ctx.say(format!("Quote {}: {}\nAdded by: {}", q.id, q.quote, q.author)).await?;
+        }
+    }
 
     Ok(())
 }
 
 /// Add a new quote
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
-pub async fn addquote(ctx: Context<'_>, #[description = "ID"] quote: String) -> Result<(), Error> {
-    let pool = ctx.data().db.clone();
+pub async fn addquote(
+    ctx: Context<'_>,
+    #[description = "ID"] quote_contents: String
+) -> Result<(), Error> {
+    let new_quote = quote::ActiveModel {
+        quote: Set(quote_contents),
+        author: Set(format!("{}", ctx.author().id.0)),
+        ..Default::default() // all other attributes are `NotSet`
+    };
 
-    let row: Quote = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2)").bind(&quote).bind(ctx.author().id.0.to_string()).fetch_one(&pool).await?;
+    let insert_result = Quote::insert(new_quote).exec(&ctx.data().db).await?;
 
+    let select_result: Option<quote::Model> = Quote::find_by_id(
+        insert_result.last_insert_id.to_string()
+    ).one(&ctx.data().db).await?;
 
-    ctx.say(format!("Added quote {}: {}", row.id, row.quote)).await?;
+    let final_quote = select_result.unwrap();
+
+    ctx.say(format!("Added quote {}: {}", final_quote.id, final_quote.quote)).await?;
 
     Ok(())
 }

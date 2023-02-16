@@ -2,14 +2,14 @@ use chrono::NaiveDateTime;
 
 use poise::serenity_prelude::{ AttachmentType, Colour };
 
+use migration::{ Migrator, MigratorTrait };
 use reqwest::Client;
-use sea_orm::{ConnectOptions, Database};
-use migration::{Migrator, MigratorTrait};
+use sea_orm::{ ConnectOptions, Database };
 use serde_json::json;
 
-use html2text::from_read;
 use dotenv::dotenv;
-use std::time::{Instant, Duration};
+use html2text::from_read;
+use std::time::{ Duration, Instant };
 
 use std::{ sync::mpsc, thread }; // Multithreading // Time tracking
 
@@ -497,15 +497,12 @@ fn snowflake_to_unix(id: u128) -> u128 {
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_test_writer()
-        .init();
+    tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).with_test_writer().init();
 
     dotenv().ok();
     let args = Args::parse();
 
-    let mut opt = ConnectOptions::new(args.database_url);
+    let mut opt = ConnectOptions::new(args.database_url.clone());
     opt.max_connections(100)
         .min_connections(5)
         .connect_timeout(Duration::from_secs(8))
@@ -515,7 +512,9 @@ async fn main() {
         .sqlx_logging(false)
         .sqlx_logging_level(log::LevelFilter::Info);
 
-    let db = Database::connect(opt).await.expect(&format!("Failed to connect to {}", args.database_url));
+    let db = Database::connect(opt).await.expect(
+        &format!("Failed to connect to {}", args.database_url)
+    );
 
     let data = Data { db: db.clone() };
 
@@ -543,7 +542,11 @@ async fn main() {
 
     #[cfg(feature = "postgres")]
     {
-        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote()];
+        let mut post_features = vec![
+            quotes::getquote(),
+            quotes::addquote(),
+            // quotes::randquote()
+            ];
         bot_commands.append(&mut post_features);
     }
 
