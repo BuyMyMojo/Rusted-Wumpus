@@ -22,16 +22,16 @@ categories = ["web-programming", "text-processing", "parsing"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.19.2", features = ["full"] }
-chrono = "0.4.19"
+tokio = { version = "1.25.0", features = ["full"] }
+chrono = "0.4.23"
 poise = "0.5.2"
-quote = "1.0.18"
-serde_json = "1.0.81"
-reqwest = "0.11.10"
-serde = "1.0.137"
+quote = "1.0.23"
+serde_json = "1.0.93"
+reqwest = "0.11.14"
+serde = "1.0.152"
 html2text = "0.4.5"
 owoify = "0.1.5"
-clap = { version = "4.1.4", features = ["derive", "env"] }
+clap = { version = "4.1.6", features = ["derive", "env"] }
 sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ] }
 dotenv = { version = "0.15.0", features = ["clap"] }
 tracing-subscriber = "0.3.16"
