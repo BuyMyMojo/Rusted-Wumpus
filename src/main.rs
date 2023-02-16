@@ -1,16 +1,16 @@
 use chrono::NaiveDateTime;
 
-use poise::serenity_prelude::{AttachmentType, Colour};
+use poise::serenity_prelude::{ AttachmentType, Colour };
 
 use reqwest::Client;
+use sea_orm::{ConnectOptions, Database};
 use serde_json::json;
 
 use html2text::from_read;
-use sqlx::postgres::PgPoolOptions;
 use dotenv::dotenv;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
-use std::{sync::mpsc, thread}; // Multithreading // Time tracking
+use std::{ sync::mpsc, thread }; // Multithreading // Time tracking
 
 use owoify::OwOifiable;
 
@@ -32,7 +32,7 @@ use commands::quotes;
 
 #[derive(Debug)]
 pub struct Data {
-    pub db: sqlx::PgPool,
+    pub db: sea_orm::DatabaseConnection,
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -58,20 +58,13 @@ pub struct Args {
 #[poise::command(prefix_command, track_edits, slash_command, category = "Info")]
 async fn help(
     ctx: Context<'_>,
-    #[description = "Specific command to show help about"]
-    #[autocomplete = "poise::builtins::autocomplete_command"]
-    command: Option<String>,
+    #[description = "Specific command to show help about"] #[autocomplete = "poise::builtins::autocomplete_command"] command: Option<String>
 ) -> Result<(), Error> {
-    poise::builtins::help(
-        ctx,
-        command.as_deref(),
-        poise::builtins::HelpConfiguration {
-            extra_text_at_bottom: HELP_EXTRA_TEXT,
-            show_context_menu_commands: true,
-            ..Default::default()
-        },
-    )
-    .await?;
+    poise::builtins::help(ctx, command.as_deref(), poise::builtins::HelpConfiguration {
+        extra_text_at_bottom: HELP_EXTRA_TEXT,
+        show_context_menu_commands: true,
+        ..Default::default()
+    }).await?;
     Ok(())
 }
 
@@ -81,15 +74,10 @@ async fn help(
 #[poise::command(prefix_command, slash_command, track_edits)]
 pub async fn age(
     ctx: Context<'_>,
-    #[description = "Selected user"] user: Option<serenity::User>,
+    #[description = "Selected user"] user: Option<serenity::User>
 ) -> Result<(), Error> {
     let user = user.as_ref().unwrap_or(ctx.author());
-    ctx.say(format!(
-        "{}'s account was created at {}",
-        user.name,
-        user.created_at()
-    ))
-    .await?;
+    ctx.say(format!("{}'s account was created at {}", user.name, user.created_at())).await?;
 
     Ok(())
 }
@@ -98,9 +86,7 @@ pub async fn age(
 ///
 /// Run with no arguments to register in guild, run with argument "global" to register globally.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
-async fn register(
-    ctx: Context<'_>
-) -> Result<(), Error> {
+async fn register(ctx: Context<'_>) -> Result<(), Error> {
     poise::samples::register_application_commands_buttons(ctx).await?;
 
     Ok(())
@@ -143,7 +129,7 @@ async fn owo(ctx: Context<'_>, #[description = "Message"] msg: String) -> Result
 async fn anime(
     ctx: Context<'_>,
     #[description = "Name"] msg: String,
-    #[description = "Output raw json"] raw: Option<bool>,
+    #[description = "Output raw json"] raw: Option<bool>
 ) -> Result<(), Error> {
     // Tell discord wait longer then 3 seconds
     ctx.defer().await?;
@@ -159,11 +145,9 @@ async fn anime(
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .body(json.to_string())
-        .send()
-        .await
+        .send().await
         .unwrap()
-        .text()
-        .await;
+        .text().await;
 
     // Get json
     let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
@@ -172,11 +156,8 @@ async fn anime(
 
     // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
     let description = from_read(
-        result["data"]["Media"]["description"]
-            .as_str()
-            .unwrap()
-            .as_bytes(),
-        50,
+        result["data"]["Media"]["description"].as_str().unwrap().as_bytes(),
+        50
     );
     let status = result["data"]["Media"]["status"].as_str().unwrap();
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
@@ -189,24 +170,16 @@ async fn anime(
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     if result["data"]["Media"]["title"]["english"].as_str() != None {
-        english_title = result["data"]["Media"]["title"]["english"]
-            .as_str()
-            .unwrap();
+        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
     }
 
     let mut base_colour = "#aed6f1";
     if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
-        base_colour = result["data"]["Media"]["coverImage"]["color"]
-            .as_str()
-            .unwrap();
+        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
     }
 
-    let image = result["data"]["Media"]["coverImage"]["extraLarge"]
-        .as_str()
-        .unwrap();
-    let small_image = result["data"]["Media"]["coverImage"]["large"]
-        .as_str()
-        .unwrap();
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
 
     let mut season = "N/A";
     if result["data"]["Media"]["season"].as_str() != None {
@@ -215,21 +188,15 @@ async fn anime(
 
     let mut start_year: i64 = -1;
     if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
-        start_year = result["data"]["Media"]["startDate"]["year"]
-            .as_i64()
-            .unwrap();
+        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
     }
     let mut start_month: i64 = -1;
     if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
-        start_month = result["data"]["Media"]["startDate"]["month"]
-            .as_i64()
-            .unwrap();
+        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
     }
     let mut start_day: i64 = -1;
     if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
-        start_day = result["data"]["Media"]["startDate"]["day"]
-            .as_i64()
-            .unwrap();
+        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
     }
 
     let mut end_year: i64 = -1;
@@ -238,9 +205,7 @@ async fn anime(
     }
     let mut end_month: i64 = -1;
     if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
-        end_month = result["data"]["Media"]["endDate"]["month"]
-            .as_i64()
-            .unwrap();
+        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
     }
     let mut end_day: i64 = -1;
     if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
@@ -254,23 +219,11 @@ async fn anime(
         ("English Name", format!("{}", english_title), true),
         ("Romaji Name", format!("{}", romaji_title), true),
         ("Description", format!("{}", description), false),
-        (
-            "Start Date",
-            format!("{} {}/{}/{}", season, start_year, start_month, start_day),
-            true,
-        ),
-        (
-            "End Date",
-            format!("{}/{}/{}", end_year, end_month, end_day),
-            true,
-        ),
+        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
+        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
         ("Status", format!("{}", status), true),
         ("Episode Count", format!("{}", episode_count), true),
-        (
-            "Episode Length",
-            format!("{} minutes", average_episode_length),
-            true,
-        ),
+        ("Episode Length", format!("{} minutes", average_episode_length), true),
         ("Average score", format!("{}", average_score), true),
         ("Mean score", format!("{}", median_score), true),
         ("Is adult?", format!("{}", adult), true),
@@ -285,8 +238,7 @@ async fn anime(
                         data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
                         filename: String::from("Anime.json"),
                     })
-            })
-            .await?;
+            }).await?;
         } else {
             ctx.send(|f| {
                 f.embed(|b| {
@@ -296,8 +248,7 @@ async fn anime(
                         .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
                         .fields(field_list)
                 })
-            })
-            .await?;
+            }).await?;
         }
     } else {
         ctx.send(|f| {
@@ -308,8 +259,7 @@ async fn anime(
                     .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
                     .fields(field_list)
             })
-        })
-        .await?;
+        }).await?;
     }
     Ok(())
 }
@@ -319,7 +269,7 @@ async fn anime(
 async fn manga(
     ctx: Context<'_>,
     #[description = "Name"] msg: String,
-    #[description = "Output raw json"] raw: Option<bool>,
+    #[description = "Output raw json"] raw: Option<bool>
 ) -> Result<(), Error> {
     // Tell discord wait longer then 3 seconds
     ctx.defer().await?;
@@ -335,11 +285,9 @@ async fn manga(
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .body(json.to_string())
-        .send()
-        .await
+        .send().await
         .unwrap()
-        .text()
-        .await;
+        .text().await;
 
     // Get json
     let result: serde_json::Value = serde_json::from_str(&resp.unwrap()).unwrap();
@@ -355,8 +303,7 @@ async fn manga(
                         data: std::borrow::Cow::Borrowed(formatted_json.as_bytes()),
                         filename: String::from("Anime.json"),
                     })
-            })
-            .await?;
+            }).await?;
 
             return Ok(());
         }
@@ -364,11 +311,8 @@ async fn manga(
 
     // let anime_id = result["data"]["Media"]["id"].as_u64().unwrap();
     let description = from_read(
-        result["data"]["Media"]["description"]
-            .as_str()
-            .unwrap()
-            .as_bytes(),
-        50,
+        result["data"]["Media"]["description"].as_str().unwrap().as_bytes(),
+        50
     );
     let status = result["data"]["Media"]["status"].as_str().unwrap();
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap();
@@ -384,24 +328,16 @@ async fn manga(
     let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     let mut english_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap();
     if result["data"]["Media"]["title"]["english"].as_str() != None {
-        english_title = result["data"]["Media"]["title"]["english"]
-            .as_str()
-            .unwrap();
+        english_title = result["data"]["Media"]["title"]["english"].as_str().unwrap();
     }
 
     let mut base_colour = "#aed6f1";
     if result["data"]["Media"]["coverImage"]["color"].as_str() != None {
-        base_colour = result["data"]["Media"]["coverImage"]["color"]
-            .as_str()
-            .unwrap();
+        base_colour = result["data"]["Media"]["coverImage"]["color"].as_str().unwrap();
     }
 
-    let image = result["data"]["Media"]["coverImage"]["extraLarge"]
-        .as_str()
-        .unwrap();
-    let small_image = result["data"]["Media"]["coverImage"]["large"]
-        .as_str()
-        .unwrap();
+    let image = result["data"]["Media"]["coverImage"]["extraLarge"].as_str().unwrap();
+    let small_image = result["data"]["Media"]["coverImage"]["large"].as_str().unwrap();
 
     let mut season = "N/A";
     if result["data"]["Media"]["season"].as_str() != None {
@@ -410,21 +346,15 @@ async fn manga(
 
     let mut start_year: i64 = -1;
     if result["data"]["Media"]["startDate"]["year"].as_i64() != None {
-        start_year = result["data"]["Media"]["startDate"]["year"]
-            .as_i64()
-            .unwrap();
+        start_year = result["data"]["Media"]["startDate"]["year"].as_i64().unwrap();
     }
     let mut start_month: i64 = -1;
     if result["data"]["Media"]["startDate"]["month"].as_i64() != None {
-        start_month = result["data"]["Media"]["startDate"]["month"]
-            .as_i64()
-            .unwrap();
+        start_month = result["data"]["Media"]["startDate"]["month"].as_i64().unwrap();
     }
     let mut start_day: i64 = -1;
     if result["data"]["Media"]["startDate"]["day"].as_i64() != None {
-        start_day = result["data"]["Media"]["startDate"]["day"]
-            .as_i64()
-            .unwrap();
+        start_day = result["data"]["Media"]["startDate"]["day"].as_i64().unwrap();
     }
 
     let mut end_year: i64 = -1;
@@ -433,9 +363,7 @@ async fn manga(
     }
     let mut end_month: i64 = -1;
     if result["data"]["Media"]["endDate"]["month"].as_i64() != None {
-        end_month = result["data"]["Media"]["endDate"]["month"]
-            .as_i64()
-            .unwrap();
+        end_month = result["data"]["Media"]["endDate"]["month"].as_i64().unwrap();
     }
     let mut end_day: i64 = -1;
     if result["data"]["Media"]["endDate"]["day"].as_i64() != None {
@@ -449,16 +377,8 @@ async fn manga(
         ("English Name", format!("{}", english_title), true),
         ("Romaji Name", format!("{}", romaji_title), true),
         ("Description", format!("{}", description), false),
-        (
-            "Start Date",
-            format!("{} {}/{}/{}", season, start_year, start_month, start_day),
-            true,
-        ),
-        (
-            "End Date",
-            format!("{}/{}/{}", end_year, end_month, end_day),
-            true,
-        ),
+        ("Start Date", format!("{} {}/{}/{}", season, start_year, start_month, start_day), true),
+        ("End Date", format!("{}/{}/{}", end_year, end_month, end_day), true),
         ("Status", format!("{}", status), true),
         ("Volume Count", format!("{}", volume_count), true),
         ("Chapter Count", format!("{} minutes", chapter_coumt), true),
@@ -475,8 +395,7 @@ async fn manga(
                 .author(|f| f.icon_url(small_image).name("AniList").url(anilist_url))
                 .fields(field_list)
         })
-    })
-    .await?;
+    }).await?;
     Ok(())
 }
 
@@ -499,7 +418,7 @@ async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> R
         tx1.send(channel_msg).unwrap(); // Send math over channel 1
         println!("Sent {} on channel 1!", channel_msg); // Print once channel 1 takes the message
 
-        let duration = start.elapsed().as_nanos() as f64 / 1000000 as f64; // End time tracking
+        let duration = (start.elapsed().as_nanos() as f64) / (1000000 as f64); // End time tracking
         tx3.send(duration).unwrap(); // Send the ms taken
     });
 
@@ -508,26 +427,29 @@ async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> R
         let channel_msg = 420 * 2;
         tx2.send(channel_msg).unwrap();
         println!("Sent {} on channel 2!", channel_msg);
-        let duration = start.elapsed().as_nanos() as f64 / 1000000 as f64;
+        let duration = (start.elapsed().as_nanos() as f64) / (1000000 as f64);
         tx4.send(duration).unwrap();
     });
 
-    ctx.say(format!(
-        "Thread 1 returned: {}\nThread 2 returned: {}",
-        rx1.recv().unwrap(),
-        rx2.recv().unwrap()
-    ))
-    .await?; // This line wont actually complete until both threads are firing in their channels
+    ctx.say(
+        format!(
+            "Thread 1 returned: {}\nThread 2 returned: {}",
+            rx1.recv().unwrap(),
+            rx2.recv().unwrap()
+        )
+    ).await?; // This line wont actually complete until both threads are firing in their channels
 
-    if timed
-    // <>threadtest -t
+    if
+        timed
+        // <>threadtest -t
     {
-        ctx.say(format!(
-            "Thread 1 took {}ms to complete\nThread 2 took {}ms to complete",
-            rx3.recv().unwrap(),
-            rx4.recv().unwrap()
-        ))
-        .await?;
+        ctx.say(
+            format!(
+                "Thread 1 took {}ms to complete\nThread 2 took {}ms to complete",
+                rx3.recv().unwrap(),
+                rx4.recv().unwrap()
+            )
+        ).await?;
     } else {
         // I'm just throwing away these channels unless being called since this is a test command. probably wouldn't leave the time tracking in at all if this was a more functional command
         let _ = rx3.recv().unwrap();
@@ -541,18 +463,16 @@ async fn threadtest(ctx: Context<'_>, #[description = "Timed"] timed: bool) -> R
 #[poise::command(prefix_command, slash_command, category = "Tools")]
 async fn creationdate(
     ctx: Context<'_>,
-    #[description = "ID"] snowflake_id: u128,
+    #[description = "ID"] snowflake_id: u128
 ) -> Result<(), Error> {
     let unix_timecode = snowflake_to_unix(snowflake_id);
 
     let date_time_stamp = NaiveDateTime::from_timestamp_opt(unix_timecode as i64, 0);
 
     if date_time_stamp.is_none() {
-        ctx.say("Unable to retrieve timestamp from snowflake")
-            .await?;
+        ctx.say("Unable to retrieve timestamp from snowflake").await?;
     } else {
-        ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap()))
-            .await?;
+        ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap())).await?;
     }
 
     Ok(())
@@ -576,21 +496,31 @@ fn snowflake_to_unix(id: u128) -> u128 {
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_test_writer()
+        .init();
+
     dotenv().ok();
     let args = Args::parse();
 
-    // Create a DB connection and embed it into the data struct for poise
-    let db = PgPoolOptions::new()
-        .max_connections(10)
-        .connect(&args.database_url)
-        .await.expect("Unable to connect to the DB!");
+    let mut opt = ConnectOptions::new(args.database_url);
+    opt.max_connections(100)
+        .min_connections(5)
+        .connect_timeout(Duration::from_secs(8))
+        .acquire_timeout(Duration::from_secs(8))
+        .idle_timeout(Duration::from_secs(8))
+        .max_lifetime(Duration::from_secs(8))
+        .sqlx_logging(false)
+        .sqlx_logging_level(log::LevelFilter::Info);
+
+    let db = Database::connect(opt).await.expect(&format!("Failed to connect to {}", args.database_url));
+
     let data = Data { db: db.clone() };
 
     // Run migrations automatically when launched to make sure the DB is setup correctly.
     // todo: Make sure this actually sets up from empty databases down the line so no user setup other than the basics of Postgres are needed.
-    sqlx::migrate!("./migrations/")
-    .run(&db)
-    .await.expect("Failed to run migrations");
+    // sqlx::migrate("./migrations/").run(&db).await.expect("Failed to run migrations");
 
     let mut bot_commands = vec![
         age(),
@@ -602,7 +532,7 @@ async fn main() {
         creationdate(),
         pog(),
         anime(),
-        manga(),
+        manga()
     ];
 
     #[cfg(feature = "testing")]
@@ -611,18 +541,13 @@ async fn main() {
     }
 
     #[cfg(feature = "postgres")]
-    {   
-        let mut post_features = vec![
-            quotes::getquote(),
-            quotes::addquote(),
-            quotes::randquote()
-        ];
-        bot_commands.append(
-            &mut post_features
-        );
+    {
+        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote()];
+        bot_commands.append(&mut post_features);
     }
 
-    let framework = poise::Framework::builder()
+    let framework = poise::Framework
+        ::builder()
         .token(args.token)
         .intents(serenity::GatewayIntents::all() | serenity::GatewayIntents::MESSAGE_CONTENT)
         .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(data) }))
