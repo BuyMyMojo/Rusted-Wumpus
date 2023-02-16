@@ -707,7 +707,7 @@ async fn main() {
 
     #[cfg(feature = "postgres")]
     {
-        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote()];
+        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote(), quotes::delquote()];
         bot_commands.append(&mut post_features);
     }
 
