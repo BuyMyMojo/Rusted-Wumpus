@@ -36,6 +36,7 @@ sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres"
 dotenv = { version = "0.15.0", features = ["clap"] }
 tracing-subscriber = "0.3.16"
 tracing = "0.1.37"
+tracing-unwrap = "0.10.0"
 
 
 [features]

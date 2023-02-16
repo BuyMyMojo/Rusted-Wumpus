@@ -13,6 +13,7 @@ use tracing::instrument;
 use tracing::metadata::LevelFilter;
 // use tracing::{event, Level};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_unwrap::ResultExt;
 use std::fs::File;
 use std::time::Instant;
 
@@ -145,6 +146,7 @@ async fn owo(ctx: Context<'_>, #[description = "Message"] msg: String) -> Result
 }
 
 /// Get an AniList entry for an Anime
+#[instrument]
 #[poise::command(prefix_command, slash_command, category = "Fun")]
 async fn anime(
     ctx: Context<'_>,
@@ -321,6 +323,7 @@ async fn anime(
 }
 
 /// Get an AniList entry for a Manga
+#[instrument]
 #[poise::command(prefix_command, slash_command, category = "Fun")]
 async fn manga(
     ctx: Context<'_>,
@@ -621,14 +624,14 @@ async fn main() {
     let db = PgPoolOptions::new()
         .max_connections(100)
         .connect(&args.database_url)
-        .await.expect("Unable to connect to the DB!");
+        .await.expect_or_log("Unable to connect to the DB!");
     let data = Data { db: db.clone() };
 
     // Run migrations automatically when launched to make sure the DB is setup correctly.
     // todo: Make sure this actually sets up from empty databases down the line so no user setup other than the basics of Postgres are needed.
     sqlx::migrate!("./migrations/")
     .run(&db)
-    .await.expect("Failed to run migrations");
+    .await.expect_or_log("Failed to run migrations");
 
     let mut bot_commands = vec![
         age(),

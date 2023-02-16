@@ -4,6 +4,7 @@ use tracing::instrument;
 use crate::{Context, Error};
 
 /// Gets a quote by ID
+#[instrument]
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
 pub async fn getquote(
     ctx: Context<'_>,
@@ -26,6 +27,7 @@ pub async fn getquote(
 }
 
 /// Gets a random quote
+#[instrument]
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
 pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
     let pool = ctx.data().db.clone();
@@ -44,6 +46,7 @@ pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Add a new quote
+#[instrument]
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
 pub async fn addquote(ctx: Context<'_>, #[description = "ID"] quote: String) -> Result<(), Error> {
     ctx.defer().await?;
