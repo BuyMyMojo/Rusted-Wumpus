@@ -18,7 +18,7 @@ use std::time::Instant;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 use tracing_unwrap::ResultExt;
 
-use std::{sync::mpsc, thread}; // Multithreading // Time tracking
+use std::{sync::mpsc, thread};
 
 use owoify::OwOifiable;
 
@@ -82,8 +82,6 @@ async fn help(
     .await?;
     Ok(())
 }
-
-// Create commands bellow!
 
 /// Display your or another user's account creation date
 #[poise::command(prefix_command, slash_command, track_edits)]
