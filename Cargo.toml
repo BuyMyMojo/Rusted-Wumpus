@@ -51,7 +51,7 @@ opt-level = 1
 opt-level = 3
 lto = true
 
-[profile.release-full-thin]
+[profile.release-thin]
 inherits = "release"
 opt-level = 3
 lto = "thin"

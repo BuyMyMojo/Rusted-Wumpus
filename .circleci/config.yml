@@ -21,9 +21,9 @@ jobs:
           command: "mkdir /tmp/artifacts"
       - run:
           name: "build"
-          command: "cargo build -j 4 --release --target-dir /tmp/artifacts"
+          command: "cargo build -j 4 --profile release-thin --target-dir /tmp/artifacts"
       - store_artifacts:
-          path: /tmp/artifacts/release/rusted_wumpus
+          path: /tmp/artifacts/release-thin/rusted_wumpus
   
   windows-build:
         executor: 
@@ -52,9 +52,9 @@ jobs:
                 name: "build"
                 command: |
                       $env:Path += ";C:\Users\circleci\.cargo\bin"
-                      cargo build -j 8 --release --target-dir C:\tmp\artifacts
+                      cargo build -j 8 --profile release-thin --target-dir C:\tmp\artifacts
             - store_artifacts:
-                path: C:\tmp\artifacts\release\rusted_wumpus.exe
+                path: C:\tmp\artifacts\release-thin\rusted_wumpus.exe
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
