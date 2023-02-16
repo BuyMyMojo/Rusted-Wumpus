@@ -32,7 +32,7 @@ html2text = "0.4.5"
 owoify = "0.1.5"
 # redis = "0.22.3"
 clap = { version = "4.1.4", features = ["derive", "env"] }
-sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ], optional = true }
+sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ] }
 dotenv = { version = "0.15.0", features = ["clap"] }
 tracing-subscriber = "0.3.16"
 tracing = "0.1.37"
@@ -41,7 +41,7 @@ tracing-unwrap = "0.10.0"
 
 [features]
 default = ["postgres", "testing"]
-postgres = ["dep:sqlx"]
+postgres = []
 testing = []
 
 [profile.dev.package."*"]
