@@ -2,5 +2,6 @@
     "conventionalCommits.scopes": [
         "main.rs",
         "vars.rs"
-    ]
+    ],
+    "Codegeex.EnableExtension": false
 }
