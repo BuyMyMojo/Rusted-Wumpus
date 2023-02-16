@@ -1,4 +1,4 @@
-use crate::{ Context, Error };
+use crate::{Context, Error};
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct Quote {
@@ -11,16 +11,20 @@ pub struct Quote {
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
 pub async fn getquote(
     ctx: Context<'_>,
-    #[description = "ID"] quote_id: String
+    #[description = "ID"] quote_id: String,
 ) -> Result<(), Error> {
     let pool = ctx.data().db.clone();
 
-    let row: Quote = sqlx
-        ::query_as("SELECT quote FROM quotes WHERE id = $1")
+    let row: Quote = sqlx::query_as("SELECT quote FROM quotes WHERE id = $1")
         .bind(&quote_id.trim())
-        .fetch_one(&pool).await?;
+        .fetch_one(&pool)
+        .await?;
 
-    ctx.say(format!("Quote {}: {}\nAdded by: {}", row.id, row.quote, row.author)).await?;
+    ctx.say(format!(
+        "Quote {}: {}\nAdded by: {}",
+        row.id, row.quote, row.author
+    ))
+    .await?;
 
     Ok(())
 }
@@ -30,11 +34,15 @@ pub async fn getquote(
 pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
     let pool = ctx.data().db.clone();
 
-    let quote: Quote = sqlx
-        ::query_as("SELECT * FROM quotes ORDER BY random() LIMIT 1;")
-        .fetch_one(&pool).await?;
+    let quote: Quote = sqlx::query_as("SELECT * FROM quotes ORDER BY random() LIMIT 1;")
+        .fetch_one(&pool)
+        .await?;
 
-    ctx.say(format!("Quote {}: {}\n Added by: <@{}>", quote.id, quote.quote, quote.author)).await?;
+    ctx.say(format!(
+        "Quote {}: {}\n Added by: <@{}>",
+        quote.id, quote.quote, quote.author
+    ))
+    .await?;
 
     Ok(())
 }
@@ -42,12 +50,18 @@ pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
 /// Add a new quote
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
 pub async fn addquote(ctx: Context<'_>, #[description = "ID"] quote: String) -> Result<(), Error> {
+    ctx.defer().await?;
+
     let pool = ctx.data().db.clone();
 
-    let row: Quote = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2)").bind(&quote).bind(ctx.author().id.0.to_string()).fetch_one(&pool).await?;
+    let row: Quote = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2) RETURNING *")
+        .bind(&quote.trim())
+        .bind(ctx.author().id.0.to_string())
+        .fetch_one(&pool)
+        .await?;
 
-
-    ctx.say(format!("Added quote {}: {}", row.id, row.quote)).await?;
+    ctx.say(format!("Added quote {}: {}", row.id, row.quote))
+        .await?;
 
     Ok(())
 }

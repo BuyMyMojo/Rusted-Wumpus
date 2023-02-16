@@ -6,12 +6,8 @@ CREATE TABLE IF NOT EXISTS public.quotes
 (
     id text COLLATE pg_catalog."default" NOT NULL DEFAULT generate_uid(8),
     quote character varying(512) COLLATE pg_catalog."default" NOT NULL,
-    author text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT quotes_pkey PRIMARY KEY (id),
-    CONSTRAINT quotes_author_fkey FOREIGN KEY (author)
-        REFERENCES public.users (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    author text REFERENCES public.users (id) NOT NULL,
+    CONSTRAINT pk_quotes PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;
