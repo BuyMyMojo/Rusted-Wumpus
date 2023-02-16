@@ -1,3 +1,11 @@
+[[bin]]
+name = "rusted_wumpus"
+path = "src/main.rs"
+
+[lib]
+name = "rusted_wumpus_lib"
+path = "src/lib/lib.rs"
+
 [package]
 name = "rusted_wumpus"
 version = "0.0.1"
@@ -26,9 +34,23 @@ owoify = "0.1.5"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ], optional = true }
 dotenv = { version = "0.15.0", features = ["clap"] }
+tracing-subscriber = "0.3.16"
+tracing = "0.1.37"
 
 
 [features]
 default = ["postgres", "testing"]
 postgres = ["dep:sqlx"]
 testing = []
+
+[profile.dev.package."*"]
+opt-level = 1
+
+[profile.release]
+opt-level = 3
+lto = true
+
+[profile.release-full-thin]
+inherits = "release"
+opt-level = 3
+lto = "thin"

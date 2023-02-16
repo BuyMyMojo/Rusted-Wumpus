@@ -1,11 +1,7 @@
-use crate::{Context, Error};
+use rusted_wumpus_lib::structs::QuoteRow;
+use tracing::instrument;
 
-#[derive(Debug, sqlx::FromRow)]
-pub struct Quote {
-    id: String,
-    quote: String,
-    author: String,
-}
+use crate::{Context, Error};
 
 /// Gets a quote by ID
 #[poise::command(prefix_command, slash_command, category = "Quotes")]
@@ -15,7 +11,7 @@ pub async fn getquote(
 ) -> Result<(), Error> {
     let pool = ctx.data().db.clone();
 
-    let row: Quote = sqlx::query_as("SELECT quote FROM quotes WHERE id = $1")
+    let row: QuoteRow = sqlx::query_as("SELECT quote FROM quotes WHERE id = $1")
         .bind(&quote_id.trim())
         .fetch_one(&pool)
         .await?;
@@ -34,7 +30,7 @@ pub async fn getquote(
 pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
     let pool = ctx.data().db.clone();
 
-    let quote: Quote = sqlx::query_as("SELECT * FROM quotes ORDER BY random() LIMIT 1;")
+    let quote: QuoteRow = sqlx::query_as("SELECT * FROM quotes ORDER BY random() LIMIT 1;")
         .fetch_one(&pool)
         .await?;
 
@@ -54,7 +50,7 @@ pub async fn addquote(ctx: Context<'_>, #[description = "ID"] quote: String) -> 
 
     let pool = ctx.data().db.clone();
 
-    let row: Quote = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2) RETURNING *")
+    let row: QuoteRow = sqlx::query_as("INSERT INTO quotes (quote, author) VALUES ($1, $2) RETURNING *")
         .bind(&quote.trim())
         .bind(ctx.author().id.0.to_string())
         .fetch_one(&pool)

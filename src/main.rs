@@ -3,11 +3,17 @@ use chrono::NaiveDateTime;
 use poise::serenity_prelude::{AttachmentType, Colour};
 
 use reqwest::Client;
+use rusted_wumpus_lib::checks::user_db_check;
 use serde_json::json;
 
 use html2text::from_read;
 use sqlx::postgres::PgPoolOptions;
 use dotenv::dotenv;
+use tracing::instrument;
+use tracing::metadata::LevelFilter;
+// use tracing::{event, Level};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use std::fs::File;
 use std::time::Instant;
 
 use std::{sync::mpsc, thread}; // Multithreading // Time tracking
@@ -572,12 +578,48 @@ fn snowflake_to_unix(id: u128) -> u128 {
 // Handle bot start and settings here
 #[tokio::main]
 async fn main() {
+    let console_layer = tracing_subscriber::fmt::layer()
+        .with_line_number(true)
+        .with_ansi(true)
+        .with_thread_names(true)
+        .with_target(true)
+        .with_filter(LevelFilter::INFO);
+
+        let info_file_layer = match File::create(
+            std::path::Path::new(&std::env::current_dir().unwrap()).join(format!(
+                "./{}_rusted-fbt.info.log",
+                chrono::offset::Local::now().timestamp()
+            )),
+        ) {
+            Ok(handle) => {
+                let file_log = tracing_subscriber::fmt::layer()
+                    .with_line_number(true)
+                    .with_ansi(false)
+                    .with_thread_names(true)
+                    .with_target(true)
+                    .with_writer(handle)
+                    .with_filter(LevelFilter::INFO);
+                Some(file_log)
+            }
+            Err(why) => {
+                eprintln!("ERROR!: Unable to create log output file: {why:?}");
+                None
+            }
+        };
+
+
+        tracing_subscriber::registry()
+        .with(console_layer)
+        .with(info_file_layer)
+        .init();
+
+
     dotenv().ok();
     let args = Args::parse();
 
     // Create a DB connection and embed it into the data struct for poise
     let db = PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(100)
         .connect(&args.database_url)
         .await.expect("Unable to connect to the DB!");
     let data = Data { db: db.clone() };
@@ -628,6 +670,12 @@ async fn main() {
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some("<>".into()),
                 ..Default::default()
+            },
+            pre_command: |ctx| {
+                Box::pin(async move {
+                    // This will add the user to the `users` table if they aren't there already
+                    user_db_check(ctx.data().db.clone(), ctx.author().clone()).await;
+                })
             },
             ..Default::default()
         });
