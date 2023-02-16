@@ -562,5 +562,5 @@ async fn main() {
             ..Default::default()
         });
 
-    framework.run().await.unwrap();
+    framework.run_autosharded().await.unwrap();
 }
