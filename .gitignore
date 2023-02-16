@@ -17,3 +17,5 @@ migration/target
 entity/target
 .dccache
 .env
+
+*.log

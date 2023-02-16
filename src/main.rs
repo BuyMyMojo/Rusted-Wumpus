@@ -587,7 +587,7 @@ async fn main() {
 
         let info_file_layer = match File::create(
             std::path::Path::new(&std::env::current_dir().unwrap()).join(format!(
-                "./{}_rusted-fbt.info.log",
+                "./{}-rusted_wumpus.info.log",
                 chrono::offset::Local::now().timestamp()
             )),
         ) {
