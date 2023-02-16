@@ -13,6 +13,8 @@ description = "A general discord bot made in rust as a personal learning experin
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+entity = { path = "entity", optional = true }
+migration = { path = "migration", optional = true }
 tokio = { version = "1.19.2", features = ["full"] }
 chrono = "0.4.19"
 poise = "0.5.2"
@@ -25,14 +27,17 @@ owoify = "0.1.5"
 # redis = "0.22.3"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 sqlx = { version = "0.6.2", features = [ "runtime-tokio-native-tls" , "postgres" ], optional = true }
-sea-orm = { version = "0.11.0", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-chrono", "postgres-array", "debug-print"], optional = true }
 dotenv = { version = "0.15.0", features = ["clap"] }
 log = "0.4.17"
 tracing-subscriber = "0.3.16"
 tracing = "0.1.37"
 
+[dependencies.sea-orm]
+version = "0.11.0"
+features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-chrono", "postgres-array", "debug-print"]
+optional = true
 
 [features]
 default = ["postgres", "testing"]
-postgres = ["dep:sqlx", "dep:sea-orm"]
+postgres = ["dep:sqlx", "dep:sea-orm", "dep:entity", "dep:migration"]
 testing = []

@@ -4,6 +4,7 @@ use poise::serenity_prelude::{ AttachmentType, Colour };
 
 use reqwest::Client;
 use sea_orm::{ConnectOptions, Database};
+use migration::{Migrator, MigratorTrait};
 use serde_json::json;
 
 use html2text::from_read;
@@ -520,7 +521,7 @@ async fn main() {
 
     // Run migrations automatically when launched to make sure the DB is setup correctly.
     // todo: Make sure this actually sets up from empty databases down the line so no user setup other than the basics of Postgres are needed.
-    // sqlx::migrate("./migrations/").run(&db).await.expect("Failed to run migrations");
+    Migrator::up(&db, None).await.expect("Failed to run migrations");
 
     let mut bot_commands = vec![
         age(),
