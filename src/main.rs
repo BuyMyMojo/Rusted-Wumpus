@@ -6,16 +6,16 @@ use reqwest::Client;
 use rusted_wumpus_lib::checks::user_db_check;
 use serde_json::json;
 
+use dotenv::dotenv;
 use html2text::from_read;
 use sqlx::postgres::PgPoolOptions;
-use dotenv::dotenv;
 use tracing::instrument;
 use tracing::metadata::LevelFilter;
 // use tracing::{event, Level};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
-use tracing_unwrap::ResultExt;
 use std::fs::File;
 use std::time::Instant;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_unwrap::ResultExt;
 
 use std::{sync::mpsc, thread}; // Multithreading // Time tracking
 
@@ -105,9 +105,7 @@ pub async fn age(
 ///
 /// Run with no arguments to register in guild, run with argument "global" to register globally.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
-async fn register(
-    ctx: Context<'_>
-) -> Result<(), Error> {
+async fn register(ctx: Context<'_>) -> Result<(), Error> {
     poise::samples::register_application_commands_buttons(ctx).await?;
 
     Ok(())
@@ -588,34 +586,32 @@ async fn main() {
         .with_target(true)
         .with_filter(LevelFilter::INFO);
 
-        let info_file_layer = match File::create(
-            std::path::Path::new(&std::env::current_dir().unwrap()).join(format!(
-                "./{}-rusted_wumpus.info.log",
-                chrono::offset::Local::now().timestamp()
-            )),
-        ) {
-            Ok(handle) => {
-                let file_log = tracing_subscriber::fmt::layer()
-                    .with_line_number(true)
-                    .with_ansi(false)
-                    .with_thread_names(true)
-                    .with_target(true)
-                    .with_writer(handle)
-                    .with_filter(LevelFilter::INFO);
-                Some(file_log)
-            }
-            Err(why) => {
-                eprintln!("ERROR!: Unable to create log output file: {why:?}");
-                None
-            }
-        };
+    let info_file_layer = match File::create(
+        std::path::Path::new(&std::env::current_dir().unwrap()).join(format!(
+            "./{}-rusted_wumpus.info.log",
+            chrono::offset::Local::now().timestamp()
+        )),
+    ) {
+        Ok(handle) => {
+            let file_log = tracing_subscriber::fmt::layer()
+                .with_line_number(true)
+                .with_ansi(false)
+                .with_thread_names(true)
+                .with_target(true)
+                .with_writer(handle)
+                .with_filter(LevelFilter::INFO);
+            Some(file_log)
+        }
+        Err(why) => {
+            eprintln!("ERROR!: Unable to create log output file: {why:?}");
+            None
+        }
+    };
 
-
-        tracing_subscriber::registry()
+    tracing_subscriber::registry()
         .with(console_layer)
         .with(info_file_layer)
         .init();
-
 
     dotenv().ok();
     let args = Args::parse();
@@ -624,14 +620,16 @@ async fn main() {
     let db = PgPoolOptions::new()
         .max_connections(100)
         .connect(&args.database_url)
-        .await.expect_or_log("Unable to connect to the DB!");
+        .await
+        .expect_or_log("Unable to connect to the DB!");
     let data = Data { db: db.clone() };
 
     // Run migrations automatically when launched to make sure the DB is setup correctly.
     // todo: Make sure this actually sets up from empty databases down the line so no user setup other than the basics of Postgres are needed.
     sqlx::migrate!("./migrations/")
-    .run(&db)
-    .await.expect_or_log("Failed to run migrations");
+        .run(&db)
+        .await
+        .expect_or_log("Failed to run migrations");
 
     let mut bot_commands = vec![
         age(),
@@ -652,15 +650,9 @@ async fn main() {
     }
 
     #[cfg(feature = "postgres")]
-    {   
-        let mut post_features = vec![
-            quotes::getquote(),
-            quotes::addquote(),
-            quotes::randquote()
-        ];
-        bot_commands.append(
-            &mut post_features
-        );
+    {
+        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote()];
+        bot_commands.append(&mut post_features);
     }
 
     let framework = poise::Framework::builder()
