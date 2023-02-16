@@ -1,6 +1,6 @@
 use poise::serenity_prelude::User;
 use sqlx::{Pool, Postgres};
-use tracing::{event, instrument, Level};
+use tracing::{event, Level};
 use tracing_unwrap::ResultExt;
 
 use crate::structs::UserRow;
