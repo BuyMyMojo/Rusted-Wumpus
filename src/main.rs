@@ -30,6 +30,7 @@ use vars::MANGA_QUERY;
 mod commands;
 use commands::quotes;
 
+#[derive(Debug)]
 pub struct Data {
     pub db: sqlx::PgPool,
 }
@@ -578,12 +579,18 @@ async fn main() {
     dotenv().ok();
     let args = Args::parse();
 
+    // Create a DB connection and embed it into the data struct for poise
     let db = PgPoolOptions::new()
         .max_connections(10)
         .connect(&args.database_url)
         .await.expect("Unable to connect to the DB!");
-
     let data = Data { db: db.clone() };
+
+    // Run migrations automatically when launched to make sure the DB is setup correctly.
+    // todo: Make sure this actually sets up from empty databases down the line so no user setup other than the basics of Postgres are needed.
+    sqlx::migrate!("./migrations/")
+    .run(&db)
+    .await.expect("Failed to run migrations");
 
     let mut bot_commands = vec![
         age(),
