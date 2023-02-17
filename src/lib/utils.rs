@@ -5,4 +5,3 @@ pub fn return_truncated(mut string: String, max_length: usize) -> String {
     }
     string
 }
-

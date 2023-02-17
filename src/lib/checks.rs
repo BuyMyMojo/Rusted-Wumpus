@@ -19,7 +19,7 @@ pub async fn user_db_check(db: Pool<Postgres>, user: User) {
             .expect_or_log("Failed to select user from db");
 
     // If user does not exist, create a new row in the database
-    if let Some(_) = optional_user {
+    if optional_user.is_some() {
     } else {
         let _row: UserRow = sqlx::query_as("INSERT INTO users (id) VALUES ($1) RETURNING *;")
             .bind(&user.id.0.to_string())
@@ -40,7 +40,10 @@ pub async fn is_admin(ctx: Context<'_>) -> Result<bool, Error> {
     let owners = ctx.framework().options().owners.clone();
 
     if owners.contains(&ctx.author().id) {
-        event!(Level::INFO, "Admin has run an elevated command." = &ctx.author().id.0);
+        event!(
+            Level::INFO,
+            "Admin has run an elevated command." = &ctx.author().id.0
+        );
         return Ok(true);
     }
 
@@ -55,10 +58,10 @@ pub async fn is_admin(ctx: Context<'_>) -> Result<bool, Error> {
         if user.is_admin {
             event!(Level::INFO, "Admin has run an elevated command." = user.id);
             return Ok(true);
-        } else {
-            return Ok(false);
         }
-    } else {
+
         return Ok(false);
     }
+
+    Ok(false)
 }

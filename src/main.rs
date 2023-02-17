@@ -3,8 +3,8 @@ use chrono::NaiveDateTime;
 use commands::admin::register;
 use commands::apis;
 
-use rusted_wumpus_lib::types::{Context, Error, Data};
 use rusted_wumpus_lib::checks::user_db_check;
+use rusted_wumpus_lib::types::{Context, Data, Error};
 
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
@@ -192,8 +192,11 @@ async fn creationdate(
         ctx.say("Unable to retrieve timestamp from snowflake")
             .await?;
     } else {
-        ctx.say(format!("Created/Joined on {}", date_time_stamp.unwrap_or_log()))
-            .await?;
+        ctx.say(format!(
+            "Created/Joined on {}",
+            date_time_stamp.unwrap_or_log()
+        ))
+        .await?;
     }
 
     Ok(())
@@ -283,7 +286,12 @@ async fn main() {
 
     #[cfg(feature = "postgres")]
     {
-        let mut post_features = vec![quotes::getquote(), quotes::addquote(), quotes::randquote(), quotes::delquote()];
+        let mut post_features = vec![
+            quotes::getquote(),
+            quotes::addquote(),
+            quotes::randquote(),
+            quotes::delquote(),
+        ];
         bot_commands.append(&mut post_features);
     }
 
@@ -304,11 +312,7 @@ async fn main() {
                     user_db_check(ctx.data().db.clone(), ctx.author().clone()).await;
                 })
             },
-            command_check: Some(|_ctx| {
-                Box::pin(async move {
-                    Ok(true)
-                })
-            }),
+            command_check: Some(|_ctx| Box::pin(async move { Ok(true) })),
             ..Default::default()
         });
 

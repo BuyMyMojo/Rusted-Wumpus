@@ -1,5 +1,5 @@
 use poise::serenity_prelude::UserId;
-use rusted_wumpus_lib::{structs::QuoteRow, checks::is_admin};
+use rusted_wumpus_lib::{checks::is_admin, structs::QuoteRow};
 use tracing::instrument;
 
 use crate::{Context, Error};
@@ -11,7 +11,6 @@ pub async fn getquote(
     ctx: Context<'_>,
     #[description = "Quote ID"] quote_id: String,
 ) -> Result<(), Error> {
-
     let row: Option<QuoteRow> = sqlx::query_as("SELECT * FROM quotes WHERE (id) = ($1) LIMIT 1;")
         .bind(quote_id.trim())
         .fetch_optional(&ctx.data().db.clone())
@@ -27,7 +26,7 @@ pub async fn getquote(
         ))
         .await?;
     } else {
-        ctx.say(format!("Quote {} not found", quote_id)).await?;
+        ctx.say(format!("Quote {quote_id} not found")).await?;
     }
 
     Ok(())
@@ -43,12 +42,11 @@ pub async fn randquote(ctx: Context<'_>) -> Result<(), Error> {
         .fetch_optional(&pool)
         .await?;
 
-    let quote = match quote {
-        Some(quote_row) => quote_row,
-        None => {
-            ctx.say("No quotes found").await?;
-            return Ok(());
-        }
+    let quote = if let Some(quote_row) = quote {
+        quote_row
+    } else {
+        ctx.say("No quotes found").await?;
+        return Ok(());
     };
 
     let author_id = UserId::from(quote.author.parse::<u64>().unwrap());

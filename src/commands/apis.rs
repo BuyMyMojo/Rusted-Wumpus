@@ -4,9 +4,12 @@ use reqwest::Client;
 use rusted_wumpus_lib::utils::return_truncated;
 use serde_json::json;
 use tracing::instrument;
-use tracing_unwrap::{ResultExt, OptionExt};
+use tracing_unwrap::{OptionExt, ResultExt};
 
-use crate::{Context, Error, vars::{ANIME_QUERY, MANGA_QUERY}};
+use crate::{
+    vars::{ANIME_QUERY, MANGA_QUERY},
+    Context, Error,
+};
 
 /// Get an AniList entry for an Anime
 #[instrument]
@@ -54,11 +57,17 @@ pub async fn anime(
     let anilist_url = result["data"]["Media"]["siteUrl"].as_str().unwrap_or_log();
     let episode_count = result["data"]["Media"]["episodes"].as_u64().unwrap_or_log();
     let average_episode_length = result["data"]["Media"]["duration"].as_u64().unwrap_or_log();
-    let average_score = result["data"]["Media"]["averageScore"].as_u64().unwrap_or_log();
-    let median_score = result["data"]["Media"]["meanScore"].as_u64().unwrap_or_log();
+    let average_score = result["data"]["Media"]["averageScore"]
+        .as_u64()
+        .unwrap_or_log();
+    let median_score = result["data"]["Media"]["meanScore"]
+        .as_u64()
+        .unwrap_or_log();
     let adult = result["data"]["Media"]["isAdult"].as_bool().unwrap_or_log();
 
-    let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap_or_log();
+    let romaji_title = result["data"]["Media"]["title"]["romaji"]
+        .as_str()
+        .unwrap_or_log();
     let english_title = if result["data"]["Media"]["title"]["english"]
         .as_str()
         .is_some()
@@ -67,7 +76,9 @@ pub async fn anime(
             .as_str()
             .unwrap_or_log()
     } else {
-        result["data"]["Media"]["title"]["romaji"].as_str().unwrap_or_log()
+        result["data"]["Media"]["title"]["romaji"]
+            .as_str()
+            .unwrap_or_log()
     };
 
     let base_colour = if result["data"]["Media"]["coverImage"]["color"]
@@ -129,7 +140,9 @@ pub async fn anime(
         .as_i64()
         .is_some()
     {
-        result["data"]["Media"]["endDate"]["year"].as_i64().unwrap_or_log()
+        result["data"]["Media"]["endDate"]["year"]
+            .as_i64()
+            .unwrap_or_log()
     } else {
         -1
     };
@@ -144,7 +157,9 @@ pub async fn anime(
         -1
     };
     let end_day = if result["data"]["Media"]["endDate"]["day"].as_i64().is_some() {
-        result["data"]["Media"]["endDate"]["day"].as_i64().unwrap_or_log()
+        result["data"]["Media"]["endDate"]["day"]
+            .as_i64()
+            .unwrap_or_log()
     } else {
         -1
     };
@@ -162,10 +177,18 @@ pub async fn anime(
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
         if want_long {
-            ("Description", return_truncated(description.to_string(), 1024), false)
-            } else {
-            ("Description", return_truncated(description.to_string(), 512), false)
-            },
+            (
+                "Description",
+                return_truncated(description.to_string(), 1024),
+                false,
+            )
+        } else {
+            (
+                "Description",
+                return_truncated(description.to_string(), 512),
+                false,
+            )
+        },
         (
             "Start Date",
             format!("{season} {start_year}/{start_month}/{start_day}"),
@@ -290,11 +313,17 @@ pub async fn manga(
         -1
     };
     let chapter_coumt = result["data"]["Media"]["chapters"].as_u64().unwrap_or_log();
-    let average_score = result["data"]["Media"]["averageScore"].as_u64().unwrap_or_log();
-    let median_score = result["data"]["Media"]["meanScore"].as_u64().unwrap_or_log();
+    let average_score = result["data"]["Media"]["averageScore"]
+        .as_u64()
+        .unwrap_or_log();
+    let median_score = result["data"]["Media"]["meanScore"]
+        .as_u64()
+        .unwrap_or_log();
     let adult = result["data"]["Media"]["isAdult"].as_bool().unwrap_or_log();
 
-    let romaji_title = result["data"]["Media"]["title"]["romaji"].as_str().unwrap_or_log();
+    let romaji_title = result["data"]["Media"]["title"]["romaji"]
+        .as_str()
+        .unwrap_or_log();
     let english_title = if result["data"]["Media"]["title"]["english"]
         .as_str()
         .is_some()
@@ -303,7 +332,9 @@ pub async fn manga(
             .as_str()
             .unwrap_or_log()
     } else {
-        result["data"]["Media"]["title"]["romaji"].as_str().unwrap_or_log()
+        result["data"]["Media"]["title"]["romaji"]
+            .as_str()
+            .unwrap_or_log()
     };
 
     let base_colour = if result["data"]["Media"]["coverImage"]["color"]
@@ -365,7 +396,9 @@ pub async fn manga(
         .as_i64()
         .is_some()
     {
-        result["data"]["Media"]["endDate"]["year"].as_i64().unwrap_or_log()
+        result["data"]["Media"]["endDate"]["year"]
+            .as_i64()
+            .unwrap_or_log()
     } else {
         -1
     };
@@ -380,7 +413,9 @@ pub async fn manga(
         -1
     };
     let end_day = if result["data"]["Media"]["endDate"]["day"].as_i64().is_some() {
-        result["data"]["Media"]["endDate"]["day"].as_i64().unwrap_or_log()
+        result["data"]["Media"]["endDate"]["day"]
+            .as_i64()
+            .unwrap_or_log()
     } else {
         -1
     };
@@ -398,9 +433,17 @@ pub async fn manga(
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
         if want_long {
-        ("Description", return_truncated(description.to_string(), 1024), false)
+            (
+                "Description",
+                return_truncated(description.to_string(), 1024),
+                false,
+            )
         } else {
-        ("Description", return_truncated(description.to_string(), 512), false)
+            (
+                "Description",
+                return_truncated(description.to_string(), 512),
+                false,
+            )
         },
         (
             "Start Date",
