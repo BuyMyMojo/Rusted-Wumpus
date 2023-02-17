@@ -1,0 +1,1 @@
+cargo +nightly clippy --all-features -Z unstable-options -- -D clippy::correctness -W clippy::style -W clippy::complexity -W clippy::perf -W clippy::nursery -W clippy::pedantic -W clippy::cargo -A clippy::too_many_lines -A clippy::unreadable_literal -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::multiple_crate_versions -A clippy::missing_errors_doc
