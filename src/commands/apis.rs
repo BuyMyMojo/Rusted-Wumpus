@@ -14,6 +14,7 @@ use crate::{Context, Error, vars::{ANIME_QUERY, MANGA_QUERY}};
 pub async fn anime(
     ctx: Context<'_>,
     #[description = "Name"] msg: String,
+    #[description = "Output long description"] long_desc: Option<bool>,
     #[description = "Output raw json"] raw: Option<bool>,
 ) -> Result<(), Error> {
     // Tell discord wait longer then 3 seconds
@@ -151,10 +152,20 @@ pub async fn anime(
     let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap_or_log();
 
+    let want_long = if long_desc.is_some() {
+        long_desc.unwrap_or_log()
+    } else {
+        false
+    };
+
     let field_list = [
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
-        ("Description", return_truncated(description.to_string(), 1024), false),
+        if want_long {
+            ("Description", return_truncated(description.to_string(), 1024), false)
+            } else {
+            ("Description", return_truncated(description.to_string(), 512), false)
+            },
         (
             "Start Date",
             format!("{season} {start_year}/{start_month}/{start_day}"),
@@ -221,6 +232,7 @@ pub async fn anime(
 pub async fn manga(
     ctx: Context<'_>,
     #[description = "Name"] msg: String,
+    #[description = "Output long description"] long_desc: Option<bool>,
     #[description = "Output raw json"] raw: Option<bool>,
 ) -> Result<(), Error> {
     // Tell discord wait longer then 3 seconds
@@ -376,10 +388,20 @@ pub async fn manga(
     let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap_or_log();
 
+    let want_long = if long_desc.is_some() {
+        long_desc.unwrap_or_log()
+    } else {
+        false
+    };
+
     let field_list = [
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
-        ("Description", return_truncated(description.to_string(), 1024), false),
+        if want_long {
+        ("Description", return_truncated(description.to_string(), 1024), false)
+        } else {
+        ("Description", return_truncated(description.to_string(), 512), false)
+        },
         (
             "Start Date",
             format!("{season} {start_year}/{start_month}/{start_day}"),
