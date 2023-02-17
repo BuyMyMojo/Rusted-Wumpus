@@ -177,11 +177,6 @@ pub async fn anime(
         ("Is adult?", format!("{adult}"), true),
     ];
 
-    let mut full_text = String::new();
-    for (name, value, _) in field_list.iter() {
-        full_text.push_str(&format!("{name}{value}"));
-    }
-
     let new_description = return_truncated(field_list[2].1.clone(), 1024);
 
     field_list[2] = ("Description", new_description, false);
@@ -406,11 +401,6 @@ pub async fn manga(
         ("Mean Score", format!("{median_score}"), true),
         ("Is Adult?", format!("{adult}"), true),
     ];
-
-    let mut full_text = String::new();
-    for (name, value, _) in field_list.iter() {
-        full_text.push_str(&format!("{name}{value}"));
-    }
 
     let new_description = return_truncated(field_list[2].1.clone(), 1024);
 
