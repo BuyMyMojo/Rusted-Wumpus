@@ -1,6 +1,6 @@
 use poise::serenity_prelude::UserId;
-use rusted_wumpus_lib::structs::QuoteRow;
-use tracing::{event, instrument, Level};
+use rusted_wumpus_lib::{structs::QuoteRow, checks::is_admin};
+use tracing::instrument;
 
 use crate::{Context, Error};
 
@@ -11,6 +11,7 @@ pub async fn getquote(
     ctx: Context<'_>,
     #[description = "Quote ID"] quote_id: String,
 ) -> Result<(), Error> {
+
     let row: Option<QuoteRow> = sqlx::query_as("SELECT * FROM quotes WHERE (id) = ($1) LIMIT 1;")
         .bind(quote_id.trim())
         .fetch_optional(&ctx.data().db.clone())
@@ -88,7 +89,7 @@ pub async fn addquote(
 
 /// Delete a quote via ID
 #[instrument]
-#[poise::command(prefix_command, slash_command, category = "Quotes")]
+#[poise::command(prefix_command, slash_command, category = "Quotes", check = "is_admin")]
 pub async fn delquote(
     ctx: Context<'_>,
     #[description = "Quote ID"] quote_id: String,

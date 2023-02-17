@@ -1,6 +1,7 @@
 #[derive(Debug, sqlx::FromRow)]
 pub struct UserRow {
-    pub id: String
+    pub id: String,
+    pub is_admin: bool,
 }
 
 #[derive(Debug, sqlx::FromRow)]
