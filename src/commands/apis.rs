@@ -151,10 +151,10 @@ pub async fn anime(
     let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap_or_log();
 
-    let mut field_list = [
+    let field_list = [
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
-        ("Description", description.to_string(), false),
+        ("Description", return_truncated(description.to_string(), 1024), false),
         (
             "Start Date",
             format!("{season} {start_year}/{start_month}/{start_day}"),
@@ -176,10 +176,6 @@ pub async fn anime(
         ("Mean score", format!("{median_score}"), true),
         ("Is adult?", format!("{adult}"), true),
     ];
-
-    let new_description = return_truncated(field_list[2].1.clone(), 1024);
-
-    field_list[2] = ("Description", new_description, false);
 
     if raw.is_some() {
         if raw.unwrap_or_log() {
@@ -380,10 +376,10 @@ pub async fn manga(
     let without_prefix = base_colour.trim_start_matches('#');
     let colour_i32 = i32::from_str_radix(without_prefix, 16).unwrap_or_log();
 
-    let mut field_list = [
+    let field_list = [
         ("English Name", english_title.to_string(), true),
         ("Romaji Name", romaji_title.to_string(), true),
-        ("Description", description.to_string(), false),
+        ("Description", return_truncated(description.to_string(), 1024), false),
         (
             "Start Date",
             format!("{season} {start_year}/{start_month}/{start_day}"),
@@ -401,10 +397,6 @@ pub async fn manga(
         ("Mean Score", format!("{median_score}"), true),
         ("Is Adult?", format!("{adult}"), true),
     ];
-
-    let new_description = return_truncated(field_list[2].1.clone(), 1024);
-
-    field_list[2] = ("Description", new_description, false);
 
     ctx.send(|f| {
         f.embed(|b| {
